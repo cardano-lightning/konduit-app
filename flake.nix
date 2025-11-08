@@ -25,6 +25,7 @@
         inputs',
         pkgs,
         system,
+        lib,
         ...
       }: {
         treefmt = {
@@ -41,6 +42,11 @@
             alejandra.enable = true;
             rustfmt.enable = true;
             aiken.enable = true;
+          };
+        };
+        packages = {
+          app = pkgs.callPackage ./flake/default.nix {
+            repoRoot = ./.;
           };
         };
         pre-commit.settings.hooks = {
@@ -69,13 +75,17 @@
             # (builtins.trace (builtins.attrNames inputs.cardano-addresses.packages.${system}) inputs.cardano-cli.packages)
             packages = [
               inputs'.aiken.packages.aiken
+              pkgs.nodePackages_latest.npm
               pkgs.nodePackages_latest.yarn
               pkgs.nodePackages_latest.nodejs
+              pkgs.prefetch-npm-deps
               pkgs.typescript-language-server
               vue-language-server
             ];
           };
       };
-      flake = {};
+      flake = {
+        nixosModules.default = import ./flake/nixos.nix inputs.self;
+      };
     };
 }
