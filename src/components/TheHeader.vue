@@ -17,15 +17,12 @@ const currentPageName = computed(() => {
 
 <template>
   <header>
-    <div class="icon-container">
-      <div v-if="isIndex">
-        <Logo />
-      </div>
-      <div v-else aria-label="Go back" @click="router.back()">
-        <h2>⟨</h2>
-      </div>
+    <div v-if="isIndex">
+      <h2><Logo /> {{ currentPageName }}</h2>
     </div>
-    <h2>{{ currentPageName }}</h2>
+    <div v-else class="back" aria-label="Go back" @click="router.back()">
+      <h2>⟨ {{ currentPageName }}</h2>
+    </div>
   </header>
 </template>
 
@@ -35,10 +32,16 @@ header {
   display: flex;
   flex-direction: row;
   gap: 1rem;
-  align-items: start;
+  align-items: center;
 }
 
-.icon-container {
-  height: 1rem;
+header h2 {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.back {
+  cursor: pointer;
 }
 </style>
