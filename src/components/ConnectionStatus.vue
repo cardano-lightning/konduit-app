@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from "vue";
-import { cardanoConnector, network } from "../store.js";
+import { cardanoConnectorUrl, network } from "../store.js";
 
 // Internal ref to track the connection status
 // Values: 'idle', 'loading', 'success', 'error'
@@ -8,7 +8,7 @@ const status = ref("idle");
 
 // Watch the 'url' prop for changes
 watch(
-  () => cardanoConnector.value,
+  () => cardanoConnectorUrl.value,
   async (newUrl) => {
     // Reset state if URL is cleared
     if (!newUrl) {
@@ -47,7 +47,7 @@ watch(
     [
     <span> Network: </span>
     <!-- Grey "(none)" if no url is set -->
-    <span v-if="!cardanoConnector" class="status-idle"> (none) </span>
+    <span v-if="!cardanoConnectorUrl" class="status-idle"> (none) </span>
     <!-- Red circle if the network request failed -->
     <span
       v-else-if="status === 'error'"
