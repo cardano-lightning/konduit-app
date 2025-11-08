@@ -1,8 +1,12 @@
 <script setup>
 import { ref, computed } from "vue";
 import TheHeader from "../components/TheHeader.vue";
-
 import { Adaptor } from "../konduit/adaptor.js";
+import { cardanoConnector, signingKey, verificationKey } from "../store.js";
+import wasm from '../utils/wasm-loader.js';
+
+// Default close period, in seconds.
+const DEFAULT_CLOSE_PERIOD = 24n * 3600n;
 
 // --- State Properties ---
 const stage = ref(1);
@@ -23,7 +27,7 @@ const adaptorInfo = computed(() => {
 const tagDefault = "konduitIsAwesome";
 const tag = ref(tagDefault);
 const tagType = ref("utf8"); // 'utf8' or 'hex'
-const amountDefault = 1;
+const amountDefault = 2;
 const amount = ref(amountDefault);
 const currency = ref("Ada");
 const available = ref(1000); // Context value for max available amount
@@ -88,21 +92,48 @@ function proceedToStage2() {
 /**
  * Final validation and "submission" of the form.
  */
-function submitForm() {
+async function submitForm() {
   // Double-check computed validators
   if (tagError.value || amountError.value) {
     console.error("Validation errors present. Submission blocked.");
     return;
   }
 
-  // All good, log the data and show success
-  console.log("Form Submitted:", {
-    url: url.value,
-    tag: tag.value,
-    tagType: tagType.value,
-    amount: amount.value,
-    currency: currency.value,
-  });
+  // TODO: Get from AdaptorInfo
+  const adaptorVerificationKey = new Uint8Array([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  ]);
+
+  const tagBytes = tagType.value === "utf8"
+    ? new TextEncoder().encode(tag.value)
+    : Uint8Array.from(tag.value.match(/../g), byte => parseInt(byte, 16));
+
+  try {
+    const connector = await cardanoConnector.value;
+
+    const transaction = await wasm(w => w.open(
+      // Cardano's connector backend
+      connector,
+      // tag: An (ideally) unique tag to discriminate channels and allow reuse of keys between them.
+      tagBytes,
+      // consumer: Consumer's verification key, allowed to *add* funds.
+      verificationKey.value,
+      // adaptor: Adaptor's verification key, allowed to *sub* funds
+      adaptorVerificationKey,
+      // close_period: Minimum time from `close` to `elapse`, in seconds.
+      DEFAULT_CLOSE_PERIOD,
+      // deposit: Quantity of Lovelace to deposit into the channel
+      BigInt(amount.value) * BigInt(1e6),
+    ));
+
+    console.log(transaction.toString());
+
+    await connector.signAndSubmit(transaction, signingKey.value);
+  } catch (e) {
+    console.log(String(e));
+    throw e;
+  }
 
   submitted.value = true;
 }
@@ -124,7 +155,7 @@ function resetForm() {
   <TheHeader />
   <div class="add-channel-container">
     <div v-if="!submitted">
-      <!-- 
+      <!--
           STAGE 1: Adaptor details
         -->
       <form v-if="stage === 1" @submit.prevent="proceedToStage2">
@@ -146,16 +177,14 @@ function resetForm() {
         </div>
       </form>
 
-      <!-- 
+      <!--
           STAGE 2: Consumer details
         -->
       <form v-if="stage === 2" @submit.prevent="submitForm">
         <h2>Channel details</h2>
 
-        <pre>
-              {{ adaptorInfo ? JSON.stringify(adaptorInfo, null, 2) : "null" }}
-            </pre
-        >
+        <pre v-if"adaptorInfo">{{ JSON.stringify(adaptorInfo, null, 2) }}</pre>
+
         <!-- Tag Input -->
         <div>
           <label for="tag">Tag:</label>
@@ -223,8 +252,8 @@ function resetForm() {
       </form>
     </div>
 
-    <!-- 
-      SUBMISSION SUCCESS 
+    <!--
+      SUBMISSION SUCCESS
     -->
     <div v-if="submitted">
       <h2>Tx Submitted</h2>
