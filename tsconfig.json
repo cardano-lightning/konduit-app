@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    // --- Project Setup ---
+    "target": "es2022", // Your code uses modern ES features (classes)
+    "module": "nodenext", //
+    "moduleResolution": "nodenext", // Correctly handles .js extensions in imports
+
+    // --- The Magic Switches ---
+    "allowJs": true, // 1. Tell TSC to read .js files
+    "checkJs": true, // 2. Tell TSC to type-check those .js files
+    "noEmit": true, // 3. MOST IMPORTANT: Don't create output .js files
+
+    // --- Strictness (Recommended) ---
+    "strict": true, // 4. Enable all strict type-checking rules
+    "esModuleInterop": true, // Ensures compatibility between module types
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true // Skip checking types in node_modules
+  },
+  "include": [
+    "**/*.js" // Tell TSC to check all .js files in the project
+  ],
+  "exclude": ["node_modules"]
+}
