@@ -3,6 +3,7 @@ import { openDB } from "idb";
 import * as keys from "./cardano/keys.js";
 import { networkTypes } from "./cardano/network.js";
 import * as hex from "./utils/hex.js";
+import wasm from './utils/wasm-loader.js';
 
 /** @constant {string} The name of the IndexedDB database. */
 const DB_NAME = "db";
@@ -175,6 +176,8 @@ export const verificationKey = computed(() =>
   signingKey.value ? keys.toVerificationKey(signingKey.value) : null,
 );
 
+export const walletBalance = ref(0);
+
 /**
  * Watches the signingKey ref. When it changes, the new value is
  * persisted to the database, unless the app is in the initial `load` state.
@@ -183,6 +186,15 @@ watch(signingKey, async (curr, _prev) => {
   if (appState.value != appStates.load) {
     toDb(signingKeyLabel, curr);
   }
+
+  if (curr) {
+    const connector = await cardanoConnector.value;
+    walletBalance.value = await connector.balance(verificationKey.value);
+  } else {
+    // Reset balance if key is cleared
+    walletBalance.value = 0;
+  }
+
 });
 
 /**
@@ -193,18 +205,20 @@ const cardanoConnectorLabel = "cardanoConnector";
  * The reactive holder for the user's selected cardano connector configuration.
  * @type {import('vue').Ref<{url: string, headers?: object} | null>}
  */
-export const cardanoConnector = ref(
-  "https://konduit-connector.matthias-benkort-623.workers.dev",
-);
+export const cardanoConnectorUrl = ref("https://konduit-connector.matthias-benkort-623.workers.dev");
+export const cardanoConnector = ref(wasm(w => w.CardanoConnector.new(cardanoConnectorUrl.value)));
 
 /**
  * Watches the cardanoConnector ref. When it changes, the new value is
  * persisted to the database, unless the app is in the initial `load` state.
  */
-watch(cardanoConnector, async (curr, _prev) => {
+watch(cardanoConnectorUrl, async (url) => {
   if (appState.value != appStates.load) {
-    toDb(cardanoConnectorLabel, curr);
+    toDb(cardanoConnectorLabel, url);
   }
+
+  // Reload the connector.
+  cardanoConnectorUrl.value = wasm(w => w.CardanoConnector.new(url));
 });
 
 /**
@@ -237,7 +251,7 @@ watch(network, async (curr, _prev) => {
  * */
 export async function loadDb() {
   await fromDb(signingKeyLabel, signingKey);
-  await fromDb(cardanoConnectorLabel, cardanoConnector);
+  await fromDb(cardanoConnectorLabel, cardanoConnectorUrl);
   await fromDb(networkLabel, network);
   return;
 }
@@ -268,6 +282,7 @@ export function importSettings(settings) {
   try {
     const version = requiredField("version", settings);
     const content = requiredField("content", settings);
+
     if (version == "0") {
       signingKey.value = hex.decode(requiredField("signingKey", content));
     } else {
