@@ -1,16 +1,17 @@
 <script setup>
 import { ref, computed } from "vue";
 import TheHeader from "../components/TheHeader.vue";
+import AdaptorInfo from "../components/AdaptorInfo.vue";
 import { Adaptor } from "../konduit/adaptor.js";
+import { PROTOCOL_MIN_LOVELACE } from "../konduit/constants.js";
 import { cardanoConnector, signingKey, verificationKey } from "../store.js";
 import wasm from "../utils/wasm-loader.js";
-
-// Default close period, in seconds.
-const DEFAULT_CLOSE_PERIOD = 24n * 3600n;
+import * as hex from "../utils/hex.js";
+import PendingTx from "../components/PendingTx.vue";
 
 // --- State Properties ---
 const stage = ref(1);
-const submitted = ref(false);
+const pendingTx = ref(null);
 
 // Stage 1
 const defaultUrl = "https://ada.konduit.channel/";
@@ -18,16 +19,12 @@ const url = ref(defaultUrl);
 
 // Stage 2
 
-const adaptorInfo = computed(() => {
-  if (stage.value == 2) {
-    new Adaptor(null, url.value).getInfo();
-  }
-});
+const adaptorInfo = ref(null);
 
 const tagDefault = "konduitIsAwesome";
 const tag = ref(tagDefault);
 const tagType = ref("utf8"); // 'utf8' or 'hex'
-const amountDefault = 2;
+const amountDefault = 5;
 const amount = ref(amountDefault);
 const currency = ref("Ada");
 const available = ref(1000); // Context value for max available amount
@@ -46,6 +43,18 @@ const tagError = computed(() => {
     const hexRegex = /^[0-9a-fA-F]+$/; // Requires at least one hex char
     if (!hexRegex.test(tag.value)) {
       return "Tag must be a valid non-empty hexadecimal string (0-9, a-f, A-F).";
+    }
+    if (tag.value.length > 2 * adaptorInfo.value.maxTagLength) {
+      return "Tag is too long";
+    }
+  }
+  if (adaptorInfo.value) {
+    const maxTagLength = adaptorInfo.value.maxTagLength;
+    if (
+      tag.value.length >
+      (tagType === "hex" ? 2 : 1) * adaptorInfo.value.maxTagLength
+    ) {
+      return "Tag is too long";
     }
   }
   // No specific validation for utf8, just that it's not empty.
@@ -76,9 +85,8 @@ const amountError = computed(() => {
 function proceedToStage2() {
   urlError.value = ""; // Reset error
   try {
-    // Use the URL constructor for simple, robust validation
-    new URL(url.value);
     // Clear stage 2 errors/data when proceeding
+    new Adaptor(null, url.value).getInfo().then((x) => (adaptorInfo.value = x));
     tagType.value = "utf8";
     tag.value = tagDefault;
     amount.value = amountDefault;
@@ -99,12 +107,8 @@ async function submitForm() {
     return;
   }
 
-  // TODO: Get from AdaptorInfo
-  const adaptorVerificationKey = new Uint8Array([
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0,
-  ]);
-
+  const adaptorVerificationKey = hex.decode(adaptorInfo.value.adaptorKey);
+  const closePeriod = BigInt(adaptorInfo.value.closePeriod);
   const tagBytes =
     tagType.value === "utf8"
       ? new TextEncoder().encode(tag.value)
@@ -124,21 +128,30 @@ async function submitForm() {
         // adaptor: Adaptor's verification key, allowed to *sub* funds
         adaptorVerificationKey,
         // close_period: Minimum time from `close` to `elapse`, in seconds.
-        DEFAULT_CLOSE_PERIOD,
+        closePeriod,
         // deposit: Quantity of Lovelace to deposit into the channel
-        BigInt(amount.value) * BigInt(1e6),
+        BigInt(amount.value) * BigInt(1e6) + PROTOCOL_MIN_LOVELACE,
       ),
     );
 
     console.log(transaction.toString());
 
-    await connector.signAndSubmit(transaction, signingKey.value);
+    const createDummyPromise = () => {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          // Change to reject() to test the error case
+          resolve("Transaction Successful!");
+        }, 1000); // 1000ms = 1 second
+      });
+    };
+    pendingTx.value = connector.signAndSubmit(transaction, signingKey.value);
   } catch (e) {
-    console.log(String(e));
-    throw e;
+    pendingTx.value(
+      new Promise((resolve, reject) =>
+        reject(new Error("Something went wrong")),
+      ),
+    );
   }
-
-  submitted.value = true;
 }
 
 /**
@@ -157,10 +170,10 @@ function resetForm() {
 <template>
   <TheHeader />
   <div class="add-channel-container">
-    <div v-if="!submitted">
+    <div v-if="pendingTx === null">
       <!--
-          STAGE 1: Adaptor details
-        -->
+        STAGE 1: Adaptor details
+      -->
       <form v-if="stage === 1" @submit.prevent="proceedToStage2">
         <h2>Adaptor URL</h2>
         <div>
@@ -181,12 +194,13 @@ function resetForm() {
       </form>
 
       <!--
-          STAGE 2: Consumer details
-        -->
+        STAGE 2: Consumer details
+      -->
       <form v-if="stage === 2" @submit.prevent="submitForm">
         <h2>Channel details</h2>
 
-        <pre v-if="adaptorInfo">{{ JSON.stringify(adaptorInfo, null, 2) }}</pre>
+        <AdaptorInfo v-if="adaptorInfo" v-bind="adaptorInfo" />
+        <p v-else="">pending info...</p>
 
         <!-- Tag Input -->
         <div>
@@ -228,6 +242,7 @@ function resetForm() {
           <div v-if="amountError" class="error" aria-live="polite">
             {{ amountError }}
           </div>
+          <span>(protocol min ada is added)</span>
         </div>
 
         <!-- Currency Input (Disabled) -->
@@ -255,17 +270,7 @@ function resetForm() {
       </form>
     </div>
 
-    <!--
-      SUBMISSION SUCCESS
-    -->
-    <div v-if="submitted">
-      <h2>Tx Submitted</h2>
-      <p><strong>URL:</strong> {{ url }}</p>
-      <p>
-        <strong>Tag ({{ tagType }}):</strong> {{ tag }}
-      </p>
-      <p><strong>Amount:</strong> {{ amount }} {{ currency }}</p>
-    </div>
+    <PendingTx v-else :pendingTx="pendingTx" />
   </div>
 </template>
 
@@ -283,8 +288,4 @@ form {
   justify-content: space-around;
   align-content: space-around;
 }
-
-/* Minimal styling to make it usable.
-  'scoped' means these styles will only apply to this component.
-*/
 </style>
