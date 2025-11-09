@@ -3,7 +3,7 @@ import { openDB } from "idb";
 import * as keys from "./cardano/keys.js";
 import { networkTypes } from "./cardano/network.js";
 import * as hex from "./utils/hex.js";
-import wasm from './utils/wasm-loader.js';
+import wasm from "./utils/wasm-loader.js";
 
 /** @constant {string} The name of the IndexedDB database. */
 const DB_NAME = "db";
@@ -194,7 +194,6 @@ watch(signingKey, async (curr, _prev) => {
     // Reset balance if key is cleared
     walletBalance.value = 0;
   }
-
 });
 
 /**
@@ -205,8 +204,12 @@ const cardanoConnectorLabel = "cardanoConnector";
  * The reactive holder for the user's selected cardano connector configuration.
  * @type {import('vue').Ref<{url: string, headers?: object} | null>}
  */
-export const cardanoConnectorUrl = ref("https://konduit-connector.matthias-benkort-623.workers.dev");
-export const cardanoConnector = ref(wasm(w => w.CardanoConnector.new(cardanoConnectorUrl.value)));
+export const cardanoConnectorUrl = ref(
+  "https://konduit-connector.matthias-benkort-623.workers.dev",
+);
+export const cardanoConnector = ref(
+  wasm((w) => w.CardanoConnector.new(cardanoConnectorUrl.value)),
+);
 
 /**
  * Watches the cardanoConnector ref. When it changes, the new value is
@@ -218,7 +221,7 @@ watch(cardanoConnectorUrl, async (url) => {
   }
 
   // Reload the connector.
-  cardanoConnectorUrl.value = wasm(w => w.CardanoConnector.new(url));
+  cardanoConnectorUrl.value = wasm((w) => w.CardanoConnector.new(url));
 });
 
 /**

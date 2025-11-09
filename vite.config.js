@@ -5,7 +5,7 @@ import vue from "@vitejs/plugin-vue";
 // https://vitejs.dev/config/
 export default defineConfig({
   worker: {
-    format: 'es'  // Explicitly enforce 'es' for workers
+    format: "es", // Explicitly enforce 'es' for workers
   },
   // If you have rollupOptions.output.format = 'iife' for the main bundle, keep it—workers are handled separately
   plugins: [

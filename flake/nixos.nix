@@ -1,9 +1,13 @@
-self: { lib, config, pkgs, ... }:
-let
+self: {
+  lib,
+  config,
+  pkgs,
+  ...
+}: let
   inherit (lib) mkOption types mapAttrs';
   inherit (pkgs) writeTextDir symlinkJoin;
 
-  konduitAppOptions = { name, ... }: {
+  konduitAppOptions = {name, ...}: {
     options = {
       domain = mkOption {
         type = types.str;
@@ -25,21 +29,20 @@ let
     };
   };
 
-  mkRoot = name: { flake, ... }:
-    builtins.trace "flake.packages.${pkgs.system}: ${builtins.toJSON flake.packages.${pkgs.system}}.default" flake.packages.${pkgs.system}.app+"/lib/node_modules/konduit-app/dist/";
-
-in
-{
+  mkRoot = name: {flake, ...}:
+    builtins.trace "flake.packages.${pkgs.system}: ${builtins.toJSON flake.packages.${pkgs.system}}.default" flake.packages.${pkgs.system}.app + "/lib/node_modules/konduit-app/dist/";
+in {
   options = {
     konduit-apps = mkOption {
       type = types.attrsOf (types.submodule konduitAppOptions);
-      default = { };
+      default = {};
       description = "Konduit app instances to run";
     };
   };
 
   config = {
-    http-services.static-sites = mapAttrs'
+    http-services.static-sites =
+      mapAttrs'
       (name: konduit-app: {
         name = "konduit-app-${name}";
         value = {

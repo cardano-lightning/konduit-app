@@ -3,7 +3,7 @@ import { ref, computed } from "vue";
 import TheHeader from "../components/TheHeader.vue";
 import { Adaptor } from "../konduit/adaptor.js";
 import { cardanoConnector, signingKey, verificationKey } from "../store.js";
-import wasm from '../utils/wasm-loader.js';
+import wasm from "../utils/wasm-loader.js";
 
 // Default close period, in seconds.
 const DEFAULT_CLOSE_PERIOD = 24n * 3600n;
@@ -101,31 +101,34 @@ async function submitForm() {
 
   // TODO: Get from AdaptorInfo
   const adaptorVerificationKey = new Uint8Array([
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0,
   ]);
 
-  const tagBytes = tagType.value === "utf8"
-    ? new TextEncoder().encode(tag.value)
-    : Uint8Array.from(tag.value.match(/../g), byte => parseInt(byte, 16));
+  const tagBytes =
+    tagType.value === "utf8"
+      ? new TextEncoder().encode(tag.value)
+      : Uint8Array.from(tag.value.match(/../g), (byte) => parseInt(byte, 16));
 
   try {
     const connector = await cardanoConnector.value;
 
-    const transaction = await wasm(w => w.open(
-      // Cardano's connector backend
-      connector,
-      // tag: An (ideally) unique tag to discriminate channels and allow reuse of keys between them.
-      tagBytes,
-      // consumer: Consumer's verification key, allowed to *add* funds.
-      verificationKey.value,
-      // adaptor: Adaptor's verification key, allowed to *sub* funds
-      adaptorVerificationKey,
-      // close_period: Minimum time from `close` to `elapse`, in seconds.
-      DEFAULT_CLOSE_PERIOD,
-      // deposit: Quantity of Lovelace to deposit into the channel
-      BigInt(amount.value) * BigInt(1e6),
-    ));
+    const transaction = await wasm((w) =>
+      w.open(
+        // Cardano's connector backend
+        connector,
+        // tag: An (ideally) unique tag to discriminate channels and allow reuse of keys between them.
+        tagBytes,
+        // consumer: Consumer's verification key, allowed to *add* funds.
+        verificationKey.value,
+        // adaptor: Adaptor's verification key, allowed to *sub* funds
+        adaptorVerificationKey,
+        // close_period: Minimum time from `close` to `elapse`, in seconds.
+        DEFAULT_CLOSE_PERIOD,
+        // deposit: Quantity of Lovelace to deposit into the channel
+        BigInt(amount.value) * BigInt(1e6),
+      ),
+    );
 
     console.log(transaction.toString());
 
@@ -183,7 +186,7 @@ function resetForm() {
       <form v-if="stage === 2" @submit.prevent="submitForm">
         <h2>Channel details</h2>
 
-        <pre v-if"adaptorInfo">{{ JSON.stringify(adaptorInfo, null, 2) }}</pre>
+        <pre v-if="adaptorInfo">{{ JSON.stringify(adaptorInfo, null, 2) }}</pre>
 
         <!-- Tag Input -->
         <div>

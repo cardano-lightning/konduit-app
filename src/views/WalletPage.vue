@@ -1,39 +1,42 @@
 <script setup>
-import { Copy, ExternalLink, Share2 } from 'lucide-vue-next';
-import QRCode from 'qrcode';
+import { Copy, ExternalLink, Share2 } from "lucide-vue-next";
+import QRCode from "qrcode";
 import { network, verificationKey, walletBalance } from "../store.js";
 import { networkTypes } from "../cardano/network.js";
 import * as hex from "../utils/hex.js";
-import { verificationKeyToAddress, verificationKeyToAddressBytes } from "../cardano/address.js";
+import {
+  verificationKeyToAddress,
+  verificationKeyToAddressBytes,
+} from "../cardano/address.js";
 import TheHeader from "../components/TheHeader.vue";
-import { useClipboard } from '@vueuse/core';
-import { computed, nextTick, ref, unref, watch } from 'vue';
+import { useClipboard } from "@vueuse/core";
+import { computed, nextTick, ref, unref, watch } from "vue";
 const { copy } = useClipboard();
 
 const bech32Addr = computed(() => {
   let vk = unref(verificationKey);
   let net = unref(network);
-  if (vk === null || net === null) return '';
+  if (vk === null || net === null) return "";
   return verificationKeyToAddress(net, vk);
 });
 
-const shareSupported = 'share' in navigator;
+const shareSupported = "share" in navigator;
 
 async function shareAddress(event) {
   let address = unref(bech32Addr);
-  if (!shareSupported || address === '') return;
-  await navigator.share({ text: address, title: 'Konduit Wallet Address' });
+  if (!shareSupported || address === "") return;
+  await navigator.share({ text: address, title: "Konduit Wallet Address" });
 }
 
 function cardanoScanURL(net, vk) {
   let baseURL = (() => {
     switch (net) {
       case networkTypes.MAINNET:
-        return 'https://cardanoscan.io/address/';
+        return "https://cardanoscan.io/address/";
       case networkTypes.PREPROD:
-        return 'https://preprod.cardanoscan.io/address/';
+        return "https://preprod.cardanoscan.io/address/";
       case networkTypes.PREVIEW:
-        return 'https://preview.cardanoscan.io/address/';
+        return "https://preview.cardanoscan.io/address/";
       default:
         throw new Error(`Unsupported network type for CardanoScan URL: ${net}`);
     }
@@ -43,7 +46,7 @@ function cardanoScanURL(net, vk) {
   const addressHex = hex.encode(addressBytes);
   const url = baseURL + addressHex;
   return url;
-};
+}
 
 async function openCardanoScan(event) {
   let net = unref(network);
@@ -51,61 +54,82 @@ async function openCardanoScan(event) {
   if (net === null || vk === null) return;
   let url = cardanoScanURL(net, vk);
   if (url === undefined) return;
-  window.open(url, '_blank');
+  window.open(url, "_blank");
 }
 
 // Ref to hold the generated SVG string
-const qrSvg = ref('');
+const qrSvg = ref("");
 
 // This ref is used to apply styles to the generated SVG
 // which is hard to do without manipulating the DOM directly.
 const qrContainer = ref(null);
 const generateQR = async () => {
   const svgString = await QRCode.toString(bech32Addr.value, {
-    type: 'svg',
-    errorCorrectionLevel: 'H',
+    type: "svg",
+    errorCorrectionLevel: "H",
     margin: 2,
     scale: 4,
     color: {
-      dark: '#000000',
-      light: '#ffffff'
-    }
+      dark: "#000000",
+      light: "#ffffff",
+    },
   });
   qrSvg.value = svgString;
   await nextTick(); // Wait for DOM to render the new SVG
-  const svgElement = qrContainer.value?.querySelector('svg');
+  const svgElement = qrContainer.value?.querySelector("svg");
   if (svgElement) {
-    svgElement.style.border = '1px solid';
-    svgElement.style.borderColor = 'inherit';
-    svgElement.style.width = '80%';
+    svgElement.style.border = "1px solid";
+    svgElement.style.borderColor = "inherit";
+    svgElement.style.width = "80%";
   }
 };
 
 watch(bech32Addr, generateQR, {
-  immediate: true
+  immediate: true,
 });
-
 </script>
 
 <template>
   <TheHeader />
   <div class="wallet-container" v-if="verificationKey !== null">
-      <div>
-        <h2>Balance</h2>
-        <span>{{ Number(walletBalance) / 1e6 }}₳</span>
-      </div>
+    <div>
+      <h2>Balance</h2>
+      <span>{{ Number(walletBalance) / 1e6 }}₳</span>
+    </div>
 
-      <div id="address-section">
-        <h2>Address</h2>
-        <div>
-          <span class="address">{{ bech32Addr }}</span>
-          <Copy class="button" @click="copy($event)" data-label="key" :size="16" title="Copy address" />
-          <a class="button" @click="openCardanoScan($event)" title="View on CardanoScan"><ExternalLink :size="16" /></a>
-          <Share2 v-if="shareSupported" class="button" @click="shareAddress($event)" :size="16" title="Share address" />
-          <QrCode class="button" @click="shareAddress($event)" :size="16" title="Share address" />
-        </div>
-        <div id="qr-svg" v-html="qrSvg" ref="qrContainer"></div>
+    <div id="address-section">
+      <h2>Address</h2>
+      <div>
+        <span class="address">{{ bech32Addr }}</span>
+        <Copy
+          class="button"
+          @click="copy($event)"
+          data-label="key"
+          :size="16"
+          title="Copy address"
+        />
+        <a
+          class="button"
+          @click="openCardanoScan($event)"
+          title="View on CardanoScan"
+          ><ExternalLink :size="16"
+        /></a>
+        <Share2
+          v-if="shareSupported"
+          class="button"
+          @click="shareAddress($event)"
+          :size="16"
+          title="Share address"
+        />
+        <QrCode
+          class="button"
+          @click="shareAddress($event)"
+          :size="16"
+          title="Share address"
+        />
       </div>
+      <div id="qr-svg" v-html="qrSvg" ref="qrContainer"></div>
+    </div>
   </div>
   <div class="wallet-container" v-else>
     <span>[No wallet found]</span>
@@ -130,9 +154,9 @@ a.button {
   cursor: pointer;
   text-decoration: none;
 }
-  a.button :first-child {
-    vertical-align: middle;
-  }
+a.button :first-child {
+  vertical-align: middle;
+}
 
 .button {
   display: inline-block;
@@ -149,12 +173,12 @@ a.button {
 }
 
 .address {
-  display: inline-block;  /* Ensure it behaves like text */
+  display: inline-block; /* Ensure it behaves like text */
   vertical-align: middle;
-  max-width: 70%;  /* Adjust to fit your layout; use % or vw for responsiveness */
-  overflow: hidden;  /* Hide overflow */
-  text-overflow: ellipsis;  /* Add ... */
-  white-space: nowrap;  /* Prevent wrapping */
+  max-width: 70%; /* Adjust to fit your layout; use % or vw for responsiveness */
+  overflow: hidden; /* Hide overflow */
+  text-overflow: ellipsis; /* Add ... */
+  white-space: nowrap; /* Prevent wrapping */
 }
 
 .break {
@@ -162,7 +186,7 @@ a.button {
 }
 
 .button.copy.copied::before {
-  content: 'copied!';
+  content: "copied!";
   position: absolute;
   font-variant: small-caps;
   top: -1.2em;
