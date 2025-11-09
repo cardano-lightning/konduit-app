@@ -16,6 +16,18 @@ function copySpan(event) {
   setTimeout(() => (view.value = false), 1200);
   return copy(event.target.textContent.trim());
 }
+
+const shareSupported = 'share' in navigator;
+
+async function shareAddress(event) {
+  const address = event.target.previousElementSibling.textContent.trim();
+  console.log('Sharing address:', address);
+  try {
+    await navigator.share({ text: address, title: 'Konduit Wallet Address' });
+  } catch (err) {
+    console.error('Error sharing address:', err);
+  }
+}
 </script>
 
 <template>
@@ -38,6 +50,7 @@ function copySpan(event) {
         <span class="copy-able break" :class="{ copied: copied.addr.value }" data-label="addr" @click="copySpan($event)">
           {{ verificationKeyToAddress(network, verificationKey) }}
         </span>
+        <span class="share-able" @click="shareAddress($event)" v-if="shareSupported" title="Share address">🔗</span>
       </div>
   </div>
   <div class="wallet-container" v-else>
@@ -97,6 +110,19 @@ function copySpan(event) {
   border-radius: 4px;
   opacity: 0;
   animation: fadeUp 1.2s ease forwards;
+}
+
+.share-able {
+  cursor: pointer;
+  margin-left: 0.5em;
+  font-size: 1em;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.share-able:hover {
+  opacity: 1;
+  color: var(--color-accent, #3b82f6);
 }
 
 @keyframes fadeUp {
