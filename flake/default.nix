@@ -28,7 +28,10 @@ stdenv.mkDerivation (finalAttrs: {
 
   yarnOfflineCache = fetchYarnDeps {
     yarnLock = finalAttrs.src + "/yarn.lock";
-    hash = "sha256-zGqCLajjcbwahUd9OpuNhWtJKXYYm+LiVExqEmJMCe4=";
+    # Please uncomment the line fake hash line below and run `nix build .#app`
+    # to get the new hash. Please also leave this comment and that line in place :-P
+    hash = "sha256-di+KI6mNQ4fDf4UecZiSW7zshCRXKZK4gx+rNJu67vw=";
+    # hash = lib.fakeHash;
   };
 
   nativeBuildInputs = [
