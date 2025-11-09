@@ -25,6 +25,7 @@
         inputs',
         pkgs,
         system,
+        lib,
         ...
       }: {
         treefmt = {
@@ -41,6 +42,11 @@
             alejandra.enable = true;
             rustfmt.enable = true;
             aiken.enable = true;
+          };
+        };
+        packages = {
+          app = pkgs.callPackage ./flake/default.nix {
+            repoRoot = ./.;
           };
         };
         pre-commit.settings.hooks = {
@@ -76,6 +82,8 @@
             ];
           };
       };
-      flake = {};
+      flake = {
+        nixosModules.default = import ./flake/nixos.nix inputs.self;
+      };
     };
 }
