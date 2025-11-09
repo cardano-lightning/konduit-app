@@ -1,4 +1,5 @@
-{ repoRoot,
+{
+  repoRoot,
   lib,
   stdenv,
   fetchFromGitHub,
@@ -8,7 +9,6 @@
   yarnInstallHook,
   nodejs,
 }:
-
 stdenv.mkDerivation (finalAttrs: {
   pname = "konduit-app";
   version = "0.1.0";

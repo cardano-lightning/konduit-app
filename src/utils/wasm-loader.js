@@ -1,4 +1,4 @@
-import wasm_init, * as wasm from '../wasm/konduit_wasm.js';
+import wasm_init, * as wasm from "../wasm/konduit_wasm.js";
 
 let ready = null;
 export default async function loadWasm(cb) {

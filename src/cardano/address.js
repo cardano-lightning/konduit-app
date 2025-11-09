@@ -45,7 +45,6 @@ export function verificationKeyToAddress(network, verificationKey) {
   return bech32Address;
 }
 
-
 /**
  * @enum {number} Defines the payment part type for a Shelley address.
  * Corresponds to bit 0 of the header type.
@@ -116,4 +115,3 @@ export function constructHeader(network, payment, delegation) {
 
   return headerByte;
 }
-
