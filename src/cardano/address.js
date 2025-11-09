@@ -3,6 +3,28 @@ import { networkTypes } from "./network.js";
 import { blake2b224 } from "./hash.js";
 
 /**
+ * Generates the raw byte representation of a base address (type 6)
+ * from a verification key.
+ *
+ * @param {import('./network.js').{networkTypes} network - The network type (MAINNET, PREPROD, etc.).
+ * @param {Uint8Array} verificationKey - The public verification key.
+ * @returns {Uint8Array} The raw byte representation of the base address.
+ * @throws {Error} If the generated key hash is invalid.
+ */
+export function verificationKeyToAddressBytes(network, verificationKey) {
+  const header = constructHeader(network, PaymentType.KEY, DelegationType.NONE);
+  const keyHash = blake2b224(verificationKey);
+
+  if (!keyHash || keyHash.length !== 28) {
+    throw new Error("Invalid key hash generated. Must be 28 bytes.");
+  }
+
+  const addressBytes = new Uint8Array(29);
+  addressBytes.set([header], 0);
+  addressBytes.set(keyHash, 1);
+  return addressBytes;
+}
+/**
  * Converts a verification key into a base address (type 6).
  * This address type consists of a header byte and the 28-byte hash
  * (Blake2b-224) of the verification key. It does not include a
@@ -14,16 +36,7 @@ import { blake2b224 } from "./hash.js";
  * @throws {Error} If keys.hashVerificationKey is not a function or fails.
  */
 export function verificationKeyToAddress(network, verificationKey) {
-  const header = constructHeader(network, PaymentType.KEY, DelegationType.NONE);
-  const keyHash = blake2b224(verificationKey);
-
-  if (!keyHash || keyHash.length !== 28) {
-    throw new Error("Invalid key hash generated. Must be 28 bytes.");
-  }
-
-  const addressBytes = new Uint8Array(29);
-  addressBytes.set([header], 0);
-  addressBytes.set(keyHash, 1);
+  const addressBytes = verificationKeyToAddressBytes(network, verificationKey);
 
   const hrp = network === networkTypes.MAINNET ? "addr" : "addr_test";
   const words = bech32.toWords(addressBytes);
@@ -31,6 +44,7 @@ export function verificationKeyToAddress(network, verificationKey) {
 
   return bech32Address;
 }
+
 
 /**
  * @enum {number} Defines the payment part type for a Shelley address.
@@ -71,7 +85,7 @@ const DelegationType = {
  * @returns {number} The 8-bit address header byte.
  * @throws {Error} If payment or delegation types are invalid.
  */
-function constructHeader(network, payment, delegation) {
+export function constructHeader(network, payment, delegation) {
   if (payment !== PaymentType.KEY && payment !== PaymentType.SCRIPT) {
     throw new Error(
       "Invalid payment type. Must be PaymentType.KEY or PaymentType.SCRIPT.",
@@ -102,3 +116,4 @@ function constructHeader(network, payment, delegation) {
 
   return headerByte;
 }
+

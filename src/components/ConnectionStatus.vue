@@ -1,4 +1,5 @@
 <script setup>
+import { parseNetwork } from "../cardano/network.js";
 import { ref, watch } from "vue";
 import { cardanoConnectorUrl, network } from "../store.js";
 
@@ -29,7 +30,9 @@ watch(
       }
 
       // On success, store the response and set status
-      network.value = await response.json().then((x) => x.network);
+      network.value = await response.json().then((res) => {
+        return parseNetwork(res.network);
+      });
       status.value = "success";
     } catch (error) {
       // On failure, log error, clear data, and set error status
