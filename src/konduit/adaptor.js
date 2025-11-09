@@ -1,3 +1,4 @@
+import * as casing from "../utils/casing.js";
 /**
  * Adaptor client:
  * We assume one client per channel
@@ -35,7 +36,6 @@ export class Adaptor {
 
     try {
       const response = await fetch(url, fetchOptions);
-      console.log("RESPONSE", await response.text());
       if (!response.ok) {
         let errorData;
         try {
@@ -64,7 +64,7 @@ export class Adaptor {
       }
 
       // Parse the JSON response
-      return await response.json();
+      return await response.json().then(casing.keysToCamel);
     } catch (error) {
       console.error("API Request Error:", error.message);
       // Re-throw the structured error

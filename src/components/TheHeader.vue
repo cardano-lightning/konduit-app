@@ -3,7 +3,7 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 // Import the new, separate icon components
-import Logo from "./icons/Logo.vue";
+import KonduitLogo from "./KonduitLogo.vue";
 import ChevronLeft from "./icons/ChevronLeft.vue";
 
 // Get the current route and router instances
@@ -18,7 +18,7 @@ const currentPageName = computed(() => {
 <template>
   <header>
     <div v-if="isIndex">
-      <h2><Logo /> {{ currentPageName }}</h2>
+      <h2><KonduitLogo /> {{ currentPageName }}</h2>
     </div>
     <div v-else class="back" aria-label="Go back" @click="router.back()">
       <h2>⟨ {{ currentPageName }}</h2>

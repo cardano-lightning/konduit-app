@@ -120,6 +120,7 @@ textarea {
 
   /* Sizing: Match button's vertical padding */
   padding: 0.6em 1em;
+  margin-bottom: 0.4em;
   box-sizing: border-box;
 
   /* Theme: Sharp corners and dark blue border */
@@ -180,11 +181,6 @@ label {
   text-align: left; /* Ensure labels are left-aligned */
 }
 
-/* --- NEW STYLES FOR RADIO/CHECKBOX --- */
-
-/* Wrapper for radio/checkbox labels to make them inline and clickable.
-  Use as: <label class="inline-label"><input type="checkbox"> Label Text</label>
-*/
 label.inline-label,
 label:has(input[type="radio"]),
 label:has(input[type="checkbox"]) {
@@ -253,7 +249,7 @@ input[type="checkbox"]::after {
 input[type="radio"]::after {
   width: 0.7em;
   height: 0.7em;
-  border-radius: 0;
+  border-radius: 100%;
   background-color: #162456;
 }
 

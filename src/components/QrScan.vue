@@ -11,6 +11,7 @@ const qrWorker = ref(null);
 const containerSize = ref({ width: 0, height: 0 });
 
 const videoRef = ref(null);
+const isFrontCamera = ref(false);
 const containerRef = ref(null);
 const snapshotCanvasRef = ref(null);
 
@@ -68,6 +69,12 @@ const initializeCamera = async () => {
         audio: false,
         video: { facingMode: "environment" },
       });
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        const settings = videoTrack.getSettings();
+        isFrontCamera.value = settings.facingMode === "user";
+        console.log("Camera facing mode:", settings.facingMode);
+      }
       videoRef.value.srcObject = stream;
     } catch (error) {
       console.error("Camera access was denied or an error occurred:", error);
@@ -146,6 +153,7 @@ onUnmounted(() => {
           autoplay
           playsinline
           muted
+          :class="{ mirror: isFrontCamera }"
           :style="{
             width: `${containerSize.width}px`,
             height: `${containerSize.height}px`,
@@ -164,7 +172,7 @@ onUnmounted(() => {
 
 <style scoped>
 .qr-scan-container {
-  max-width: 100%;
+  width: 100%;
   margin-left: auto;
   margin-right: auto;
   text-align: center;
@@ -219,7 +227,7 @@ onUnmounted(() => {
   display: none;
 }
 
-video {
+.mirror {
   -webkit-transform: scaleX(-1);
   transform: scaleX(-1);
 }
