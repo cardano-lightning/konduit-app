@@ -8,7 +8,6 @@
     git-hooks-nix.inputs.nixpkgs.follows = "nixpkgs";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
-    aiken.url = "github:aiken-lang/aiken";
   };
 
   outputs = inputs @ {flake-parts, ...}:
@@ -41,7 +40,6 @@
             };
             alejandra.enable = true;
             rustfmt.enable = true;
-            aiken.enable = true;
           };
         };
         packages = {
@@ -74,7 +72,6 @@
             # Let's keep this "path discovery techinque" here for refernece:
             # (builtins.trace (builtins.attrNames inputs.cardano-addresses.packages.${system}) inputs.cardano-cli.packages)
             packages = [
-              inputs'.aiken.packages.aiken
               pkgs.nodePackages_latest.yarn
               pkgs.nodePackages_latest.nodejs
               pkgs.typescript-language-server
