@@ -75,10 +75,8 @@
             # (builtins.trace (builtins.attrNames inputs.cardano-addresses.packages.${system}) inputs.cardano-cli.packages)
             packages = [
               inputs'.aiken.packages.aiken
-              pkgs.nodePackages_latest.npm
               pkgs.nodePackages_latest.yarn
               pkgs.nodePackages_latest.nodejs
-              pkgs.prefetch-npm-deps
               pkgs.typescript-language-server
               vue-language-server
             ];

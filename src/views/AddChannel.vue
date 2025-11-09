@@ -13,7 +13,7 @@ const stage = ref(1);
 const submitted = ref(false);
 
 // Stage 1
-const defaultUrl = "http://localhost:4445/";
+const defaultUrl = "https://ada.konduit.channel/";
 const url = ref(defaultUrl);
 
 // Stage 2
