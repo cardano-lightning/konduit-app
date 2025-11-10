@@ -15,7 +15,7 @@ const DB_VERSION = 1;
 
 /**
  * A promise that resolves to the initialized IndexedDB instance.
- * @type {Promise<import('idb').IDBPDatabase> || null} */
+ * @type {import('idb').IDBPDatabase || null} */
 
 let db = null;
 
@@ -62,7 +62,7 @@ async function initDb() {
  * @returns {Promise<any>} A promise that resolves with the stored value, or undefined if not found.
  */
 export async function get(key) {
-  return (await db).get(STORE_NAME, key);
+  return db.get(STORE_NAME, key);
 }
 
 /**
@@ -72,7 +72,7 @@ export async function get(key) {
  * @returns {Promise<IDBValidKey>} A promise that resolves with the key of the stored item.
  */
 export async function set(key, val) {
-  return (await db).put(STORE_NAME, val, key);
+  return db.put(STORE_NAME, val, key);
 }
 
 /**
@@ -81,7 +81,7 @@ export async function set(key, val) {
  * @returns {Promise<void>} A promise that resolves when the item is deleted.
  */
 export async function del(key) {
-  return (await db).delete(STORE_NAME, key);
+  return db.delete(STORE_NAME, key);
 }
 
 /**
@@ -89,7 +89,7 @@ export async function del(key) {
  * @returns {Promise<void>} A promise that resolves when the store is cleared.
  */
 export async function clear() {
-  return (await db).clear(STORE_NAME);
+  return db.clear(STORE_NAME);
 }
 
 // export async function keys() {

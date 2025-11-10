@@ -131,7 +131,7 @@ watch(bech32Addr, generateQR, {
     <div id="address-section">
       <h2>Address</h2>
       <div>
-        <span class="address">{{ truncedAddr }}</span>
+        <span class="address" :title="bech32Addr">{{ truncedAddr }}</span>
         <Copy
           class="button"
           @click="copySpan($event)"
