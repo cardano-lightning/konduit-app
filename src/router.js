@@ -1,4 +1,4 @@
-import { createWebHistory, createRouter } from "vue-router";
+import { createRouter, createWebHashHistory } from "vue-router";
 
 import IndexPage from "./views/IndexPage.vue";
 import WalletPage from "./views/WalletPage.vue";
@@ -14,10 +14,25 @@ const routes = [
     component: IndexPage,
     meta: { title: "Konduit" },
   },
-  { name: "wallet", path: "/wallet", component: WalletPage },
-  { name: "pay", path: "/pay", component: PayPage },
-  { name: "settings", path: "/settings", component: SettingsPage },
-  { name: "create", path: "/create", component: CreatePage },
+  {
+    name: "wallet",
+    path: "/wallet",
+    component: WalletPage,
+    meta: { title: "Wallet" },
+  },
+  { name: "pay", path: "/pay", component: PayPage, meta: { title: "Pay" } },
+  {
+    name: "settings",
+    path: "/settings",
+    component: SettingsPage,
+    meta: { title: "Settings" },
+  },
+  {
+    name: "create",
+    path: "/create",
+    component: CreatePage,
+    meta: { title: "Create" },
+  },
   {
     name: "add-channel",
     path: "/add-channel",
@@ -27,7 +42,8 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(
+  history: createWebHashHistory(
+    // @ts-ignore
     import.meta.env.BASE_URL || "http://localhost:5173/",
   ),
   routes,
