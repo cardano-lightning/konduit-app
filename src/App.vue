@@ -1,9 +1,9 @@
 <script setup>
 import { onMounted, onUnmounted } from "vue";
-import { appState, appStates, loadDb, hasSigningKey } from "./store.js";
+import { appState, appStates, initApp, hasSigningKey } from "./store.js";
 
 onMounted(() => {
-  loadDb()
+  initApp()
     .then(() => {
       if (hasSigningKey.value) {
         appState.value = appStates.run;
@@ -11,7 +11,7 @@ onMounted(() => {
         appState.value = appStates.launch;
       }
     })
-    .catch(() => {
+    .catch((err) => {
       alert("Can't load db");
     });
 });

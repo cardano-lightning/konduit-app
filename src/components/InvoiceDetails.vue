@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { abbreviate } from "../utils/str.js";
 
 const props = defineProps({
   invoice: {
@@ -26,8 +27,8 @@ const formattedExpiry = computed(() => {
 // Truncates long strings for display
 const truncatedDestination = computed(() => {
   const dest = props.invoice.destination;
-  if (!dest || dest.length < 20) return dest || "N/A";
-  return `${dest.substring(0, 10)}...${dest.substring(dest.length - 10)}`;
+  if (!dest) return "N/A";
+  return abbreviate(dest, 10, 10);
 });
 
 const getQuotes = () => {

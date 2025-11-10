@@ -2,6 +2,7 @@ import { ref, watch, computed } from "vue";
 import { openDB } from "idb";
 import * as keys from "./cardano/keys.js";
 import { networkTypes } from "./cardano/network.js";
+import { setIntervalAsync } from "./utils/async.js";
 import * as hex from "./utils/hex.js";
 import wasm from "./utils/wasm-loader.js";
 
@@ -13,13 +14,19 @@ const STORE_NAME = "kv";
 const DB_VERSION = 1;
 
 /**
+ * A promise that resolves to the initialized IndexedDB instance.
+ * @type {Promise<import('idb').IDBPDatabase> || null} */
+
+let db = null;
+
+/**
  * Initializes and opens the IndexedDB database.
  * Sets up the object store if it doesn't exist.
  * Includes handlers for database blocking.
- * @returns {Promise<import('idb').IDBPDatabase>} A promise that resolves with the database instance.
+ * @returns {Promise<void>} A promise that resolves when the database is initialized.
  */
 async function initDb() {
-  const db = await openDB(DB_NAME, DB_VERSION, {
+  db = await openDB(DB_NAME, DB_VERSION, {
     /**
      * Called when the database version changes or the DB is created.
      * @param {import('idb').IDBPDatabase} db - The database instance.
@@ -47,14 +54,7 @@ async function initDb() {
       );
     },
   });
-  return db;
 }
-
-/**
- * A promise that resolves to the initialized IndexedDB instance.
- * @type {Promise<import('idb').IDBPDatabase>}
- */
-const db = initDb();
 
 /**
  * Retrieves a value from the database store by its key.
@@ -176,23 +176,14 @@ export const verificationKey = computed(() =>
   signingKey.value ? keys.toVerificationKey(signingKey.value) : null,
 );
 
-export const walletBalance = ref(0);
-
 /**
  * Watches the signingKey ref. When it changes, the new value is
  * persisted to the database, unless the app is in the initial `load` state.
  */
 watch(signingKey, async (curr, _prev) => {
+  // TODO: cleanup the DB on key change here
   if (appState.value != appStates.load) {
     toDb(signingKeyLabel, curr);
-  }
-
-  if (curr) {
-    const connector = await cardanoConnector.value;
-    walletBalance.value = await connector.balance(verificationKey.value);
-  } else {
-    // Reset balance if key is cleared
-    walletBalance.value = 0;
   }
 });
 
@@ -252,10 +243,13 @@ watch(network, async (curr, _prev) => {
  * Populates the reactive state refs from IndexedDB.
  * @returns {Promise<void>} A promise that resolves when all data is loaded.
  * */
-export async function loadDb() {
+export async function initApp() {
+  await initDb();
+  console.log("Database initialized");
   await fromDb(signingKeyLabel, signingKey);
   await fromDb(cardanoConnectorLabel, cardanoConnectorUrl);
   await fromDb(networkLabel, network);
+  await fromDb(walletBalanceLabel, walletBalance);
   return;
 }
 
@@ -325,3 +319,26 @@ function requiredField(field, data) {
     return value;
   }
 }
+
+const walletBalanceLabel = "walletBalance";
+
+export const walletBalance = ref(0);
+
+watch(walletBalance, async (curr, _prev) => {
+  if (appState.value != appStates.load) {
+    await toDb(walletBalanceLabel, curr);
+  }
+});
+
+/** Poll the wallet balance at the specified interval (in seconds)
+ *  @param {number} interval - The polling interval in milliseconds.
+ *  @returns a handle to stop the polling.
+ */
+export const pollWalletBalance = (interval) => {
+  return setIntervalAsync(async () => {
+    let connector = await cardanoConnector.value;
+    walletBalance.value = await connector.balance(verificationKey.value);
+  }, interval * 1000);
+}
+
+
