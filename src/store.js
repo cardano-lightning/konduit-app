@@ -5,6 +5,8 @@ import { networkTypes } from "./cardano/network.js";
 import { setIntervalAsync } from "./utils/async.js";
 import * as hex from "./utils/hex.js";
 import wasm from "./utils/wasm-loader.js";
+import { Channel } from "./konduit/channel.js";
+import { KonduitTx } from "./konduit/konduitTx.js";
 
 /** @constant {string} The name of the IndexedDB database. */
 const DB_NAME = "db";
@@ -342,3 +344,58 @@ export const pollWalletBalance = (interval) => {
 }
 
 
+/** @constant {string} The database key for storing the channels. */
+const channelsLabel = "channels";
+
+/**
+ * All the channels
+ * @type {import('vue').Ref<Channel[] >}
+ */
+export const channels = ref([]);
+
+/**
+ * @param {Channel} channel
+ */
+export function channelsAppend(channel) {
+  channels.value = [...channels.value, channel];
+}
+/**
+ * Watches the network ref. When it changes, the new value is
+ * persisted to the database, unless the app is in the initial `load` state.
+ */
+watch(channels, async (curr, _prev) => {
+  if (appState.value != appStates.load) {
+    toDb(
+      channelsLabel,
+      curr.map((x) => JSON.stringify(x.serialise())),
+    );
+  }
+});
+
+/** @constant {string} The database key for storing the txs. */
+const txsLabel = "txs";
+
+/**
+ * All the txs
+ * @type {import('vue').Ref<KonduitTx[] >}
+ */
+export const txs = ref([]);
+
+/**
+ * @param {KonduitTx} tx
+ */
+export function txsAppend(tx) {
+  txs.value = [...txs.value, tx];
+}
+/**
+ * Watches the network ref. When it changes, the new value is
+ * persisted to the database, unless the app is in the initial `load` state.
+ */
+watch(txs, async (curr, _prev) => {
+  if (appState.value != appStates.load) {
+    toDb(
+      txsLabel,
+      curr.map((x) => JSON.stringify(x.serialise())),
+    );
+  }
+});

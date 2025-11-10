@@ -4,7 +4,6 @@ import { concat } from "../utils/uint8Array.js";
 
 /**
  * Represents the body of a cheque, containing its core data.
- * @typedef {object} ChequeBody
  * @property {number} index - The index or sequence number of the cheque.
  * @property {number} amount - The value or amount associated with the cheque.
  * @property {number} timeout - A timestamp or slot number indicating when the cheque expires.
@@ -23,6 +22,43 @@ export class ChequeBody {
     this.amount = amount;
     this.timeout = timeout;
     this.lock = lock;
+  }
+  /**
+   * Serialises the ChequeBody instance into a plain object for storage.
+   * @returns {object} A plain object representation.
+   */
+  serialise() {
+    return {
+      index: this.index,
+      amount: this.amount,
+      timeout: this.timeout,
+      lock: this.lock,
+    };
+  }
+
+  /**
+   * Deserialises a plain object from storage back into a ChequeBody instance.
+   * @param {object} data - The plain object.
+   * @param {number} data.index
+   * @param {number} data.amount
+   * @param {number} data.timeout
+   * @param {Uint8Array} data.lock
+   * @returns {ChequeBody} A new ChequeBody instance.
+   * @throws {Error} If data is invalid.
+   */
+  static deserialise(data) {
+    if (
+      !data ||
+      typeof data.index !== "number" ||
+      typeof data.amount !== "number" ||
+      typeof data.timeout !== "number" ||
+      !(data.lock instanceof Uint8Array)
+    ) {
+      throw new Error(
+        "Invalid or incomplete data for ChequeBody deserialisation.",
+      );
+    }
+    return new ChequeBody(data.index, data.amount, data.timeout, data.lock);
   }
 
   /**

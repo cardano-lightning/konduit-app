@@ -1,12 +1,7 @@
 import * as hex from "../utils/hex.js";
 import * as cbor from "../cardano/cbor.js";
 import { sign, verify } from "../cardano/keys.js";
-
-/**
- * @typedef {object} Cheque
- * @property {import('./chequeBody.js').ChequeBody} body
- * @property {Uint8Array} signature
- */
+import { ChequeBody } from "./chequeBody.js";
 
 export class Cheque {
   /**
@@ -16,6 +11,36 @@ export class Cheque {
   constructor(body, signature) {
     this.body = body;
     this.signature = signature;
+  }
+  /**
+   * Serialises the Cheque instance into a plain object for storage.
+   * @returns {object} A plain object representation.
+   */
+  serialise() {
+    return {
+      body: this.body.serialise(),
+      signature: this.signature,
+    };
+  }
+
+  /**
+   * Deserialises a plain object from storage back into a Cheque instance.
+   * @param {object} data - The plain object.
+   * @param {any} data.body
+   * @param {Uint8Array} data.signature
+   * @returns {Cheque} A new Cheque instance.
+   * @throws {Error} If data is invalid.
+   */
+  static deserialise(data) {
+    if (!data || !data.body || !(data.signature instanceof Uint8Array)) {
+      throw new Error("Invalid or incomplete data for Cheque deserialisation.");
+    }
+    try {
+      const body = ChequeBody.deserialise(data.body);
+      return new Cheque(body, data.signature);
+    } catch (error) {
+      throw new Error(`Cheque deserialisation failed: ${error.message}`);
+    }
   }
 
   /**

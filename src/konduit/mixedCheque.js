@@ -30,6 +30,41 @@ export class MixedCheque {
     return new MixedCheque("Cheque", cheque);
   }
 
+  serialise() {
+    return {
+      variant: this.variant,
+      value: this.value.serialise(),
+    };
+  }
+
+  /**
+   * Deserialises a plain object from storage back into a MixedCheque instance.
+   * @param {object} data - The plain object.
+   * @param {"Cheque" | "Unlocked"} data.variant
+   * @param {any} data.value
+   * @returns {MixedCheque} A new MixedCheque instance.
+   * @throws {Error} If data is invalid.
+   */
+  static deserialise(data) {
+    if (!data || !data.variant || !data.value) {
+      throw new Error(
+        "Invalid or incomplete data for MixedCheque deserialisation.",
+      );
+    }
+
+    try {
+      if (data.variant === "Cheque") {
+        return MixedCheque.fromCheque(Cheque.deserialise(data.value));
+      } else if (data.variant === "Unlocked") {
+        return MixedCheque.fromUnlocked(Unlocked.deserialise(data.value));
+      } else {
+        throw new Error(`Unknown MixedCheque variant: ${data.variant}`);
+      }
+    } catch (error) {
+      throw new Error(`MixedCheque deserialisation failed: ${error.message}`);
+    }
+  }
+
   /** @returns {boolean} */
   isCheque() {
     return this.variant === "Cheque";
@@ -47,11 +82,13 @@ export class MixedCheque {
 
   /** @returns {Unlocked | null} */
   asUnlocked() {
+    // @ts-expect-error TS2322
     return this.variant === "Unlocked" ? this.value : null;
   }
 
   /** @returns {Cheque | null} */
   asCheque() {
+    // @ts-expect-error TS2322
     return this.variant === "Cheque" ? this.value : null;
   }
 
@@ -64,6 +101,7 @@ export class MixedCheque {
   verify(verificationKey, tag) {
     if (this.isCheque()) {
       // this.value is a Cheque
+      // @ts-expect-error TS2322
       return this.value.verify(verificationKey, tag);
     } else {
       // this.value is an Unlocked
@@ -81,6 +119,7 @@ export class MixedCheque {
       }
 
       // 2. Verify the secret matches the lock
+      // @ts-expect-error TS2322
       const lock = sha256(unlocked.secret);
       return uint8Array.equals(lock, unlocked.body.lock);
     }

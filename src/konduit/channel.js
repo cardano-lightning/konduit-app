@@ -1,21 +1,11 @@
+import * as hex from "../utils/hex.js";
+import { concat } from "../utils/uint8Array.js";
+import { Adaptor } from "./adaptor.js";
 import { AdaptorInfo } from "./adaptorInfo.js";
-// --- JSDoc Type Definitions ---
-// Define placeholder structures for your custom types.
-// Modify these to match your actual data structures.
-
-/**
- * @typedef {object} L1Channel
- * @property {string} channelId - Example property: The Layer 1 channel identifier.
- * @property {string} state - Example property: The current state of the L1 channel.
- */
-
-/**
- * @typedef {object} MixedReceipt
- * @property {string} receiptHash - Example property: The hash of the mixed receipt.
- * @property {Array<string>} signatures - Example property: A list of signatures.
- */
-
-// --- Channel Class ---
+import { ChequeBody } from "./chequeBody.js";
+import { L1Channel } from "./l1Channel.js";
+import { MixedReceipt } from "./mixedReceipt.js";
+import { Squash } from "./squash.js";
 
 /**
  * Manages the state of a channel, including L1 and L2 information.
@@ -25,12 +15,25 @@ export class Channel {
   /**
    * Creates an instance of a Channel.
    *
+   * @param {Uint8Array} verificationKey - Own verification key
+   * Althouth this is duplication, it seems more hygenic to keep it here.
    * @param {Uint8Array} tag - A unique tag or identifier for the channel.
    * @param {AdaptorInfo} adaptorInfo - Configuration and info about the adaptor.
    * @param {L1Channel} l1 - The Layer 1 channel information.
    * @param {MixedReceipt} l2 - The Layer 2 mixed receipt information.
    */
-  constructor(tag, adaptorInfo, l1, l2) {
+  constructor(verificationKey, tag, adaptorInfo, l1, l2) {
+    /**
+     * Own verification key
+     * @type {Uint8Array}
+     */
+    this.key = verificationKey;
+
+    /**
+     * Own keytag
+     * @type {Uint8Array}
+     */
+    this.keytag = concat([verificationKey, tag]);
     /**
      * A unique tag or identifier for the channel.
      * @type {Uint8Array}
@@ -57,6 +60,86 @@ export class Channel {
   }
 
   /**
+   * @param {Uint8Array} verificationKey - Own verification key
+   * @param {Uint8Array<ArrayBufferLike>} tag
+   * @param {AdaptorInfo} adaptorInfo
+   * @param {L1Channel} l1
+   * @param {Squash} squash
+   * @returns {Channel}
+   */
+  static open(verificationKey, tag, adaptorInfo, l1, squash) {
+    const mixedReceipt = new MixedReceipt(squash, []);
+    return new Channel(verificationKey, tag, adaptorInfo, l1, mixedReceipt);
+  }
+
+  /**
+   * Send current squash to adaptor
+   * */
+  squash() {
+    return this.adaptor().chSquash(this.l2.squash);
+  }
+
+  /**
+   * Send current squash to adaptor
+   * */
+  adaptor() {
+    return new Adaptor(this.keytag, this.adaptorInfo.url);
+  }
+
+  /**
+   * Make the next cheque body. Index deduced from current. Body
+   * WARNING: we don't insert it here since it first needs to be signed.
+   * @param {number} amount
+   * @param {number} timeout
+   * @param {Uint8Array<ArrayBufferLike>} lock
+   */
+  makeChequeBody(amount, timeout, lock) {
+    const index = this.l2.maxIndex() + 1;
+    return new ChequeBody(index, amount, timeout, lock);
+  }
+
+  /**
+   * */
+  updateFromL1(l1s) {
+    throw Error("Not yet implemented");
+  }
+
+  /**
+   * The l2 (mixed receipt is constructed upstream)
+   * squash verification
+   * */
+  updateL2(l2) {
+    throw Error("Not yet implemented");
+  }
+
+  /**
+   * Get quote from adaptor if funds available.
+   * Gets inserted into mixed receipt
+   * squash verification
+   * returns {Promise<QuoteResult | null>}
+   * @param {number} amount_mst - Amount to pay in msats
+   * @param {Uint8Array} payee - 33 Byte address
+   */
+  quote(amount_mst, payee) {
+    // FIXME :: insert client side checks
+    // We dont currently do FX, so this is not possible
+
+    throw Error("Not yet implemented");
+    return this.adaptor().chQuote(amount_msat, payee);
+  }
+
+  /**
+   * newCheque
+   * Gets inserted into mixed receipt
+   * squash verification
+   * */
+  pay(cheque, invoiceDetails) {
+    // 1. INSERT INTO L2
+    // 2. POST
+    throw Error("Not yet implemented");
+  }
+
+  /**
    * Serialises the Channel instance into a plain object for storage.
    * IndexedDB's "structured clone algorithm" can store plain objects
    * and specific types like Uint8Array, but not class instances (it loses methods).
@@ -65,10 +148,11 @@ export class Channel {
    */
   serialise() {
     return {
-      tag: this.tag,
+      key: hex.encode(this.key),
+      tag: hex.encode(this.tag),
       adaptorInfo: this.adaptorInfo.serialise(),
-      l1: this.l1,
-      l2: this.l2,
+      l1: this.l1.serialise(),
+      l2: this.l2.serialise(),
     };
   }
 
@@ -77,10 +161,11 @@ export class Channel {
    * This static method acts as a "factory" for rebuilding the class.
    *
    * @param {object} data - The plain object retrieved from IndexedDB.
+   * @param {Uint8Array} data.key
    * @param {Uint8Array} data.tag
    * @param {any} data.adaptorInfo
-   * @param {L1Channel} data.l1
-   * @param {MixedReceipt} data.l2
+   * @param {any} data.l1
+   * @param {any} data.l2
    * @returns {Channel} A new Channel instance.
    * @throws {Error} If data is invalid.
    */
@@ -99,10 +184,11 @@ export class Channel {
 
     try {
       return new Channel(
+        data.key,
         data.tag,
         AdaptorInfo.deserialise(data.adaptorInfo),
-        data.l1,
-        data.l2,
+        L1Channel.deserialise(data.l1),
+        MixedReceipt.deserialise(data.l2),
       );
     } catch (error) {
       console.error("Failed to deserialise AdaptorInfo:", error);

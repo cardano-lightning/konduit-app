@@ -9,6 +9,48 @@ import * as hex from "../utils/hex.js";
  */
 export class AdaptorInfo {
   /**
+   * The adaptor's public key.
+   * @type {Uint8Array}
+   */
+  adaptorKey;
+
+  /**
+   * The close period.
+   * @type {number}
+   */
+  closePeriod;
+
+  /**
+   * The fee.
+   * @type {number}
+   */
+  fee;
+
+  /**
+   * The maximum tag length.
+   * @type {number}
+   */
+  maxTagLength;
+
+  /**
+   * The deployer's verification key.
+   * @type {Uint8Array}
+   */
+  deployerVkey;
+
+  /**
+   * The script hash.
+   * @type {Uint8Array}
+   */
+  scriptHash;
+
+  /**
+   * The URL of the adaptor.
+   * @type {string}
+   */
+  url;
+
+  /**
    * Creates an instance of AdaptorInfo.
    * It's recommended to use `AdaptorInfo.deserialise` to create
    * an instance from raw data.
@@ -19,6 +61,7 @@ export class AdaptorInfo {
    * @param {number} maxTagLength - The maximum tag length.
    * @param {Uint8Array} deployerVkey - The deployer's verification key.
    * @param {Uint8Array} scriptHash - The script hash.
+   * @param {string} url - Adaptor Url
    */
   constructor(
     adaptorKey,
@@ -27,6 +70,7 @@ export class AdaptorInfo {
     maxTagLength,
     deployerVkey,
     scriptHash,
+    url,
   ) {
     this.adaptorKey = adaptorKey;
     this.closePeriod = closePeriod;
@@ -34,29 +78,29 @@ export class AdaptorInfo {
     this.maxTagLength = maxTagLength;
     this.deployerVkey = deployerVkey;
     this.scriptHash = scriptHash;
+    this.url = url;
   }
 
   /**
-   * Serialises the AdaptorInfo instance into a plain object with
-   * snake_case keys and hex strings for byte arrays.
+   * Serialises the AdaptorInfo instance into a plain object
    *
-   * @returns {{adaptor_key: string, close_period: number, fee: number, max_tag_length: number, deployer_vkey: string, script_hash: string}}
+   * @returns {{adaptorKey: string, closePeriod: number, fee: number, maxTagLength: number, deployerVkey: string, scriptHash: string, url: string}}
    * A plain object suitable for JSON or IndexedDB.
    */
   serialise() {
     return {
-      adaptor_key: hex.encode(this.adaptorKey),
-      close_period: this.closePeriod,
+      adaptorKey: hex.encode(this.adaptorKey),
+      closePeriod: this.closePeriod,
       fee: this.fee,
-      max_tag_length: this.maxTagLength,
-      deployer_vkey: hex.encode(this.deployerVkey),
-      script_hash: hex.encode(this.scriptHash),
+      maxTagLength: this.maxTagLength,
+      deployerVkey: hex.encode(this.deployerVkey),
+      scriptHash: hex.encode(this.scriptHash),
+      url: this.url,
     };
   }
 
   /**
    * Deserialises a plain object (from JSON or DB) into an AdaptorInfo instance.
-   * Expects snake_case keys and hex strings for byte arrays.
    *
    * @param {object} data - The plain object.
    * @param {string} data.adaptorKey
@@ -65,6 +109,7 @@ export class AdaptorInfo {
    * @param {number} data.maxTagLength
    * @param {string} data.deployerVkey
    * @param {string} data.scriptHash
+   * @param {string} data.url
    * @returns {AdaptorInfo} A new AdaptorInfo instance.
    * @throws {Error} If data is invalid.
    */
@@ -76,7 +121,8 @@ export class AdaptorInfo {
       data.fee == null ||
       data.maxTagLength == null ||
       data.deployerVkey == null ||
-      data.scriptHash == null
+      data.scriptHash == null ||
+      data.url == null
     ) {
       throw new Error(
         "Invalid or incomplete data for AdaptorInfo deserialisation.",
@@ -91,6 +137,7 @@ export class AdaptorInfo {
         Number(data.maxTagLength),
         hex.decode(data.deployerVkey),
         hex.decode(data.scriptHash),
+        data.url,
       );
     } catch (error) {
       console.error("Failed to deserialise AdaptorInfo:", error);

@@ -1,6 +1,7 @@
 import * as hex from "../utils/hex.js";
 import * as cbor from "../cardano/cbor.js";
 import { sign, verify } from "../cardano/keys.js";
+import { SquashBody } from "./squashBody.js";
 
 /**
  * Represents a signed "squash" operation.
@@ -20,6 +21,37 @@ export class Squash {
   }
 
   /**
+   * Serialises the Squash instance into a plain object for storage.
+   * @returns {object} A plain object representation.
+   */
+  serialise() {
+    return {
+      body: this.body.serialise(),
+      signature: this.signature,
+    };
+  }
+
+  /**
+   * Deserialises a plain object from storage back into a Squash instance.
+   * @param {object} data - The plain object.
+   * @param {any} data.body
+   * @param {Uint8Array} data.signature
+   * @returns {Squash} A new Squash instance.
+   * @throws {Error} If data is invalid.
+   */
+  static deserialise(data) {
+    if (!data || !data.body || !(data.signature instanceof Uint8Array)) {
+      throw new Error("Invalid or incomplete data for Squash deserialisation.");
+    }
+    try {
+      const body = SquashBody.deserialise(data.body);
+      return new Squash(body, data.signature);
+    } catch (error) {
+      throw new Error(`Squash deserialisation failed: ${error.message}`);
+    }
+  }
+
+  /**
    * Creates a new Squash instance by signing the tagged body.
    * @param {Uint8Array} signingKey - The private key to sign with.
    * @param {Uint8Array} tag - A domain-separation tag.
@@ -28,6 +60,16 @@ export class Squash {
    */
   static make(signingKey, tag, body) {
     return new Squash(body, sign(signingKey, body.taggedBytes(tag)));
+  }
+
+  /**
+   * Creates a new Squash instance by signing the tagged body.
+   * @param {Uint8Array} signingKey - The private key to sign with.
+   * @param {Uint8Array} tag - A domain-separation tag.
+   * @returns {Squash} A new Squash instance.
+   */
+  static makeZero(signingKey, tag) {
+    return Squash.make(signingKey, tag, SquashBody.zero());
   }
 
   /**

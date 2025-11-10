@@ -51,9 +51,50 @@ export class MixedReceipt {
 
     return new MixedReceipt(squash, sorted);
   }
+  /**
+   * Serialises the MixedReceipt instance into a plain object for storage.
+   * @returns {object} A plain object representation.
+   */
+  serialise() {
+    return {
+      squash: this.squash.serialise(),
+      mixedCheques: this.mixedCheques.map((mc) => mc.serialise()),
+    };
+  }
+
+  /**
+   * Deserialises a plain object from storage back into a MixedReceipt instance.
+   * Assumes 'Squash' class also has a static .deserialise() method.
+   * @param {object} data - The plain object.
+   * @param {any} data.squash
+   * @param {Array<any>} data.mixedCheques
+   * @returns {MixedReceipt} A new MixedReceipt instance.
+   * @throws {Error} If data is invalid.
+   */
+  static deserialise(data) {
+    if (!data || !data.squash || !Array.isArray(data.mixedCheques)) {
+      throw new Error(
+        "Invalid or incomplete data for MixedReceipt deserialisation.",
+      );
+    }
+
+    try {
+      // We must assume Squash.deserialise exists, as we don't have the file.
+      const squash = Squash.deserialise(data.squash);
+      const mixedCheques = data.mixedCheques.map((mcData) =>
+        MixedCheque.deserialise(mcData),
+      );
+
+      // Note: This bypasses the 'MixedReceipt.new()' verification logic
+      // to restore the exact saved state.
+      return new MixedReceipt(squash, mixedCheques);
+    } catch (error) {
+      throw new Error(`MixedReceipt deserialisation failed: ${error.message}`);
+    }
+  }
 
   /** @returns {number} */
-  max_index() {
+  maxIndex() {
     const squashIndex = this.squash.body.index;
     const lastCheque = this.mixedCheques[this.mixedCheques.length - 1];
     return Math.max(squashIndex, lastCheque ? lastCheque.index() : 0);
@@ -66,9 +107,11 @@ export class MixedReceipt {
 
   /** @returns {import('./cheque.js').Cheque[]} */
   cheques() {
-    return this.mixedCheques
-      .filter((mc) => mc.isCheque())
-      .map((mc) => mc.asCheque());
+    return (
+      this.mixedCheques
+        .filter((mc) => mc.isCheque())
+        .map((mc) => mc.asCheque()) || []
+    );
   }
 
   /** @returns {import('./unlocked.js').Unlocked[]} */

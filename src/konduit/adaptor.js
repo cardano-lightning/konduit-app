@@ -1,5 +1,6 @@
 import * as casing from "../utils/casing.js";
 import * as hex from "../utils/hex.js";
+import { AdaptorInfo } from "./adaptorInfo.js";
 /**
  * Adaptor client:
  * We assume one client per channel
@@ -7,7 +8,7 @@ import * as hex from "../utils/hex.js";
 export class Adaptor {
   /**
    * @param {Uint8Array<ArrayBufferLike>} keytag
-   * @param {string} baseUrl
+   * @param {string}  baseUrl
    */
   constructor(keytag, baseUrl) {
     // Ensure base URL doesn't have a trailing slash
@@ -151,11 +152,20 @@ export class Adaptor {
 
   /**
    * Fetches /info/
-   * @returns {Promise<object>}
+   * @returns {Promise<AdaptorInfo>}
    */
-  getInfo() {
+  async info() {
     console.log("Calling GET /info");
-    return this._request("/info", { method: "GET" });
+    const res = await this._request("/info", { method: "GET" });
+    return new AdaptorInfo(
+      hex.decode(res.adaptorKey),
+      res.closePeriod,
+      res.fee,
+      res.maxTagLength,
+      hex.decode(res.deployerVkey),
+      hex.decode(res.scriptHash),
+      this.baseUrl,
+    );
   }
 
   // --- Optional Endpoints ---
@@ -173,10 +183,10 @@ export class Adaptor {
 
   /**
    * Calls /ch/squash. (Assuming POST)
-   * @param {import("./squash.js")}.Squash squash - The squash
+   * @param {import("./squash.js").Squash} squash - The squash
    * @returns {Promise<object>}
    */
-  postChannelSquash(squash) {
+  chSquash(squash) {
     console.log("Calling POST /ch/squash");
     if (!this.keytag) {
       return Promise.reject(
@@ -193,7 +203,7 @@ export class Adaptor {
    * @param {object} quoteData - The data to send in the body.
    * @returns {Promise<object>}
    */
-  postChannelQuote(quoteData = {}) {
+  chQuote(quoteData = {}) {
     console.log("Calling POST /ch/quote");
     if (!this.keytag) {
       return Promise.reject(

@@ -6,6 +6,7 @@ import { Adaptor } from "../konduit/adaptor.js";
 import { PROTOCOL_MIN_LOVELACE } from "../konduit/constants.js";
 import { cardanoConnector, signingKey, pollWalletBalance, walletBalance, verificationKey } from "../store.js";
 import wasm from "../utils/wasm-loader.js";
+import { open } from "../components/txHandler.js";
 import * as hex from "../utils/hex.js";
 import PendingTx from "../components/PendingTx.vue";
 
@@ -101,7 +102,7 @@ function proceedToStage2() {
   urlError.value = ""; // Reset error
   try {
     // Clear stage 2 errors/data when proceeding
-    new Adaptor(null, url.value).getInfo().then((x) => (adaptorInfo.value = x));
+    new Adaptor(null, url.value).info().then((x) => (adaptorInfo.value = x));
     tagType.value = "utf8";
     tag.value = tagDefault;
     amount.value = amountDefault;
@@ -122,7 +123,7 @@ async function submitForm() {
     return;
   }
 
-  const adaptorVerificationKey = hex.decode(adaptorInfo.value.adaptorKey);
+  const adaptorVerificationKey = adaptorInfo.value.adaptorKey;
   const closePeriod = BigInt(adaptorInfo.value.closePeriod);
   const tagBytes =
     tagType.value === "utf8"
@@ -130,36 +131,7 @@ async function submitForm() {
       : Uint8Array.from(tag.value.match(/../g), (byte) => parseInt(byte, 16));
 
   try {
-    const connector = await cardanoConnector.value;
-
-    const transaction = await wasm((w) =>
-      w.open(
-        // Cardano's connector backend
-        connector,
-        // tag: An (ideally) unique tag to discriminate channels and allow reuse of keys between them.
-        tagBytes,
-        // consumer: Consumer's verification key, allowed to *add* funds.
-        verificationKey.value,
-        // adaptor: Adaptor's verification key, allowed to *sub* funds
-        adaptorVerificationKey,
-        // close_period: Minimum time from `close` to `elapse`, in seconds.
-        closePeriod,
-        // deposit: Quantity of Lovelace to deposit into the channel
-        BigInt(amount.value) * BigInt(1e6) + PROTOCOL_MIN_LOVELACE,
-      ),
-    );
-
-    console.log(transaction.toString());
-
-    const createDummyPromise = () => {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Change to reject() to test the error case
-          resolve("Transaction Successful!");
-        }, 1000); // 1000ms = 1 second
-      });
-    };
-    pendingTx.value = connector.signAndSubmit(transaction, signingKey.value);
+    open(adaptorInfo.value, tagBytes, amount.value);
   } catch (e) {
     pendingTx.value(
       new Promise((resolve, reject) =>

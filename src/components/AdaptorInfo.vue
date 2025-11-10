@@ -1,10 +1,11 @@
 <script setup>
 import { computed } from "vue";
 import { abbreviate } from "../utils/str.js";
+import * as hex from "../utils/hex.js";
 
 const props = defineProps({
   adaptorKey: {
-    type: String,
+    type: Uint8Array,
     required: true,
   },
   closePeriod: {
@@ -21,7 +22,7 @@ const props = defineProps({
  * Truncates the adaptor hex key.
  */
 const formattedAdaptor = computed(() => {
-  const key = props.adaptorKey;
+  const key = hex.encode(props.adaptorKey);
   return abbreviate(key, 10, 10);
 });
 
