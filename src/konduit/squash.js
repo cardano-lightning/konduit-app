@@ -4,7 +4,6 @@ import { sign, verify } from "../cardano/keys.js";
 
 /**
  * Represents a signed "squash" operation.
- * @typedef {object} Squash
  * @property {import('./squashBody.js').SquashBody} body - The body of the squash operation.
  * @property {Uint8Array} signature - The signature of the tagged squash body.
  */

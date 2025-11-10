@@ -49,15 +49,11 @@ const tagError = computed(() => {
     }
   }
   if (adaptorInfo.value) {
-    const maxTagLength = adaptorInfo.value.maxTagLength;
-    if (
-      tag.value.length >
-      (tagType === "hex" ? 2 : 1) * adaptorInfo.value.maxTagLength
-    ) {
+    const maxTagLength = adaptorInfo.value.maxTagLength || 32;
+    if (tag.value.length > (tagType === "hex" ? 2 : 1) * maxTagLength) {
       return "Tag is too long";
     }
   }
-  // No specific validation for utf8, just that it's not empty.
   return ""; // No error
 });
 
