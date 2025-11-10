@@ -49,6 +49,7 @@ in {
           inherit (konduit-app) domain;
           useSSL = konduit-app.useSSL;
           root = mkRoot name konduit-app;
+          index-fallback = true;
         };
       })
       config.konduit-apps;
