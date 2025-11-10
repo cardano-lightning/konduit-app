@@ -1,7 +1,7 @@
 <script setup>
 import { Copy, ExternalLink, Share2 } from "lucide-vue-next";
 import QRCode from "qrcode";
-import { network, verificationKey, walletBalance } from "../store.js";
+import { network, verificationKey, walletBalance, pollWalletBalance } from "../store.js";
 import { networkTypes } from "../cardano/network.js";
 import * as hex from "../utils/hex.js";
 import {
@@ -10,14 +10,41 @@ import {
 } from "../cardano/address.js";
 import TheHeader from "../components/TheHeader.vue";
 import { useClipboard } from "@vueuse/core";
-import { computed, nextTick, ref, unref, watch } from "vue";
+import { computed, nextTick, ref, unref, watch, onMounted, onUnmounted } from "vue";
+import { abbreviate } from "../utils/str.js";
+
+const pollInterval = 15; // 15 seconds
+const pollingHandle = ref(null);
+
+onMounted(() => {
+  pollingHandle.value = pollWalletBalance(pollInterval);
+});
+
+onUnmounted(async () => {
+  // Clear the polling interval when component is unmounted
+  if (pollingHandle.value !== null) {
+    pollingHandle.value();
+    pollingHandle.value = null;
+  }
+});
+
 const { copy } = useClipboard();
+
+function copySpan(event) {
+  if (!bech32Addr.value) return;
+  return copy(bech32Addr.value);
+}
 
 const bech32Addr = computed(() => {
   let vk = unref(verificationKey);
   let net = unref(network);
   if (vk === null || net === null) return "";
   return verificationKeyToAddress(net, vk);
+});
+
+const truncedAddr = computed(() => {
+  if (!bech32Addr.value) return "";
+  return abbreviate(bech32Addr.value, 10, 10);
 });
 
 const shareSupported = "share" in navigator;
@@ -64,6 +91,10 @@ const qrSvg = ref("");
 // which is hard to do without manipulating the DOM directly.
 const qrContainer = ref(null);
 const generateQR = async () => {
+  if (bech32Addr.value === "") {
+    qrSvg.value = "";
+    return;
+  }
   const svgString = await QRCode.toString(bech32Addr.value, {
     type: "svg",
     errorCorrectionLevel: "H",
@@ -100,10 +131,10 @@ watch(bech32Addr, generateQR, {
     <div id="address-section">
       <h2>Address</h2>
       <div>
-        <span class="address">{{ bech32Addr }}</span>
+        <span class="address" :title="bech32Addr">{{ truncedAddr }}</span>
         <Copy
           class="button"
-          @click="copy($event)"
+          @click="copySpan($event)"
           data-label="key"
           :size="16"
           title="Copy address"
@@ -116,12 +147,6 @@ watch(bech32Addr, generateQR, {
         /></a>
         <Share2
           v-if="shareSupported"
-          class="button"
-          @click="shareAddress($event)"
-          :size="16"
-          title="Share address"
-        />
-        <QrCode
           class="button"
           @click="shareAddress($event)"
           :size="16"
@@ -177,7 +202,6 @@ a.button :first-child {
   vertical-align: middle;
   max-width: 70%; /* Adjust to fit your layout; use % or vw for responsiveness */
   overflow: hidden; /* Hide overflow */
-  text-overflow: ellipsis; /* Add ... */
   white-space: nowrap; /* Prevent wrapping */
 }
 

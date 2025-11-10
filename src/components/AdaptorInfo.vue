@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from "vue";
+import { abbreviate } from "../utils/str.js";
 
 const props = defineProps({
   adaptorKey: {
@@ -21,10 +22,7 @@ const props = defineProps({
  */
 const formattedAdaptor = computed(() => {
   const key = props.adaptorKey;
-  if (!key || key.length <= 20) {
-    return key;
-  }
-  return `${key.substring(0, 10)}...${key.substring(key.length - 10)}`;
+  return abbreviate(key, 10, 10);
 });
 
 /**
