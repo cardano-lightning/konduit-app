@@ -1,7 +1,11 @@
 import * as cbor from "cbor-x";
 import { concat } from "../utils/uint8Array.js";
 
-export const encoder = new cbor.Encoder({ tagUint8Array: false });
+export const encoder = new cbor.Encoder({
+  tagUint8Array: false,
+  useFloat32: 0,
+  largeBigIntToFloat: false,
+});
 
 export const encode = (/** @type {Uint8Array<ArrayBufferLike>} */ x) =>
   encoder.encode(x);
@@ -34,7 +38,11 @@ export const encodeTagged = (tag, value) => {
  * @param {number} tag - The tag number.
  * @returns {Uint8Array}
  */
-const taggedArray = 0xd8;
 export const encodeTaggedRaw = (tag, value) => {
   return concat([new Uint8Array([taggedArray, tag]), value]);
 };
+const taggedArray = 0xd8;
+
+const MAX_INT = Math.pow(2, 30);
+export const wrapInt = (/** @type { number } */ x) =>
+  Math.abs(x) > MAX_INT ? BigInt(x) : x;

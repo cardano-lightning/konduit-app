@@ -95,6 +95,18 @@ export class MixedReceipt {
     }
   }
 
+  /**
+   * Verify mixed receipt
+   * @param {Uint8Array<ArrayBufferLike>} key
+   * @param {Uint8Array<ArrayBufferLike>} tag
+   */
+  verify(key, tag) {
+    return (
+      this.squash.verify(key, tag) &&
+      this.mixedCheques.every((mc) => mc.verify(key, tag))
+    );
+  }
+
   /** @returns {number} */
   maxIndex() {
     const squashIndex = this.squash.body.index;

@@ -2,6 +2,7 @@ import * as hex from "../utils/hex.js";
 import { concat } from "../utils/uint8Array.js";
 import { Adaptor } from "./adaptor.js";
 import { AdaptorInfo } from "./adaptorInfo.js";
+import { Cheque } from "./cheque.js";
 import { ChequeBody } from "./chequeBody.js";
 import { L1Channel } from "./l1Channel.js";
 import { MixedReceipt } from "./mixedReceipt.js";
@@ -102,6 +103,17 @@ export class Channel {
   }
 
   /**
+   * Insert Cheque
+   * @param {Cheque} cheque
+   */
+  insertCheque(cheque) {
+    this.l2.insert(cheque);
+  }
+
+  /**
+   * Update l1 from list of L1s.
+   * TO BE IMPLEMENTED
+   * for now rely on local state.
    * */
   updateFromL1(l1s) {
     throw Error("Not yet implemented");
@@ -110,9 +122,15 @@ export class Channel {
   /**
    * The l2 (mixed receipt is constructed upstream)
    * squash verification
-   * */
+   * @param {MixedReceipt} l2
+   */
   updateL2(l2) {
-    throw Error("Not yet implemented");
+    if (l2.verify(this.key, this.tag)) {
+      this.l2 = l2;
+      return l2;
+    } else {
+      throw Error("Not yet implemented");
+    }
   }
 
   /**

@@ -47,13 +47,7 @@ export class ChequeBody {
    * @throws {Error} If data is invalid.
    */
   static deserialise(data) {
-    if (
-      !data ||
-      typeof data.index !== "number" ||
-      typeof data.amount !== "number" ||
-      typeof data.timeout !== "number" ||
-      typeof data.lock !== "string"
-    ) {
+    if (!data || typeof data.lock !== "string") {
       throw new Error(
         "Invalid or incomplete data for ChequeBody deserialisation.",
       );
@@ -68,10 +62,15 @@ export class ChequeBody {
 
   /**
    * Returns the cheque body's properties as an array.
-   * @returns {[number, number, number, Uint8Array]} An array containing index, amount, timeout, and lock.
+   * @returns {[number | bigint,  number | bigint, number | bigint, Uint8Array]} An array containing index, amount, timeout, and lock.
    */
   asArray() {
-    return [this.index, this.amount, this.timeout, this.lock];
+    return [
+      cbor.wrapInt(this.index),
+      cbor.wrapInt(this.amount),
+      cbor.wrapInt(this.timeout),
+      this.lock,
+    ];
   }
 
   /**
@@ -112,18 +111,15 @@ export class ChequeBody {
       if (
         !Array.isArray(decoded) ||
         decoded.length !== 4 ||
-        typeof decoded[0] !== "number" ||
-        typeof decoded[1] !== "number" ||
-        typeof decoded[2] !== "number" ||
         !(decoded[3] instanceof Uint8Array)
       ) {
         throw new Error("Invalid CBOR structure for ChequeBody.");
       }
 
       return new ChequeBody(
-        decoded[0],
-        decoded[1],
-        decoded[2],
+        Number(decoded[0]),
+        Number(decoded[1]),
+        Number(decoded[2]),
         new Uint8Array(decoded[3]),
       );
     } catch (error) {
