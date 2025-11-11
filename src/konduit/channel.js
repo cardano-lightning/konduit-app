@@ -120,14 +120,11 @@ export class Channel {
    * Gets inserted into mixed receipt
    * squash verification
    * returns {Promise<QuoteResult | null>}
-   * @param {number} amount_mst - Amount to pay in msats
+   * @param {number} amount_msat - Amount to pay in msats
    * @param {Uint8Array} payee - 33 Byte address
+   * @returns {QuoteResponse}
    */
-  quote(amount_mst, payee) {
-    // FIXME :: insert client side checks
-    // We dont currently do FX, so this is not possible
-
-    throw Error("Not yet implemented");
+  quote(amount_msat, payee) {
     return this.adaptor().chQuote(amount_msat, payee);
   }
 
@@ -139,6 +136,26 @@ export class Channel {
   pay(cheque, invoiceDetails) {
     // 1. INSERT INTO L2
     // 2. POST
+    throw Error("Not yet implemented");
+  }
+
+  /**
+   * Amount available to be spent
+   * */
+  available() {
+    const l1 = this.l1;
+    const l2 = this.l2;
+    if (l1 && l2 && l1.stage === "Opened") {
+      return l1.amount - l2.committed();
+    } else {
+      return 0;
+    }
+  }
+
+  /**
+   * Funds available
+   * */
+  unresolvedCommitment() {
     throw Error("Not yet implemented");
   }
 

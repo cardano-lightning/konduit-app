@@ -99,4 +99,35 @@ export class ChequeBody {
   toCbor() {
     return cbor.encodeAsIndefinite(this.asArray());
   }
+  /**
+   * Decodes a ChequeBody from CBOR bytes.
+   * @param {Uint8Array} cborBytes - The CBOR-encoded cheque body.
+   * @returns {ChequeBody} A new ChequeBody instance.
+   * @throws {Error} If CBOR is invalid or doesn't represent a ChequeBody.
+   */
+  static fromCbor(cborBytes) {
+    try {
+      const decoded = cbor.decode(cborBytes);
+
+      if (
+        !Array.isArray(decoded) ||
+        decoded.length !== 4 ||
+        typeof decoded[0] !== "number" ||
+        typeof decoded[1] !== "number" ||
+        typeof decoded[2] !== "number" ||
+        !(decoded[3] instanceof Uint8Array)
+      ) {
+        throw new Error("Invalid CBOR structure for ChequeBody.");
+      }
+
+      return new ChequeBody(
+        decoded[0],
+        decoded[1],
+        decoded[2],
+        new Uint8Array(decoded[3]),
+      );
+    } catch (error) {
+      throw new Error(`ChequeBody fromCbor failed: ${error.message}`);
+    }
+  }
 }

@@ -1,6 +1,24 @@
 import * as casing from "../utils/casing.js";
 import * as hex from "../utils/hex.js";
 import { AdaptorInfo } from "./adaptorInfo.js";
+import { Cheque } from "./cheque.js";
+
+/**
+ * @typedef {object} QuoteResponse
+ * @property {number} amount - The quote amount (channel currency eg lovelace)
+ * @property {number} relativeTimeout - The relative timeout required on the cheque
+ * @property {number} routingFee - The routing fee of bln in msat. This is purely informational
+ */
+
+/**
+ * @typedef {object} PayBody
+ * @property {Cheque} cheque - The cheque object. (Assumes 'Cheque' is a typedef you have defined elsewhere)
+ * @property {string} payee - The payee's public key (33 bytes) as a hex-encoded string.
+ * @property {number} amountMsat - The payment amount in millisatoshis.
+ * @property {string} paymentSecret - The payment secret (32 bytes) as a hex-encoded string.
+ * @property {number} finalCltvDelta - The final CLTV delta.
+ */
+
 /**
  * Adaptor client:
  * We assume one client per channel
@@ -197,9 +215,9 @@ export class Adaptor {
 
   /**
    * Calls /ch/quote. (Assuming POST)
-   * @returns {Promise<object>}
    * @param {number} amountMsat
    * @param {Uint8Array<ArrayBufferLike>} payee
+   * @returns {Promise<QuoteResponse>}
    */
   chQuote(amountMsat, payee) {
     console.log("Calling POST /ch/quote");
@@ -211,6 +229,26 @@ export class Adaptor {
     return this._request("/ch/quote", {
       method: "POST",
       body: JSON.stringify({ amountMsat, payee: hex.encode(payee) }),
+    });
+  }
+
+  /**
+   * Calls /ch/pay. (Assuming POST)
+   * @param {PayBody} payBody
+   * @returns {Promise<PayResponse>}
+   */
+  chPay(payBody) {
+    console.log("Calling POST /ch/pay");
+    if (!this.keytag) {
+      return Promise.reject(new Error("Keytag not set. Cannot call /ch/pay."));
+    }
+    const body = JSON.stringify({
+      ...payBody,
+      cheque: hex.encode(payBody.cheque.toCbor()),
+    });
+    return this._request("/ch/quote", {
+      method: "POST",
+      body,
     });
   }
 }

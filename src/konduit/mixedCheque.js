@@ -2,9 +2,11 @@ import { sha256 } from "@noble/hashes/sha2.js";
 
 import { verify } from "../cardano/keys.js";
 import * as uint8Array from "../utils/uint8Array.js";
+import * as cbor from "../cardano/cbor.js";
 
 import { Cheque } from "./cheque.js";
 import { Unlocked } from "./unlocked.js";
+import { ChequeBody } from "./chequeBody.js";
 
 /**
  * Represents a cheque that is either locked (Cheque) or unlocked (Unlocked).
@@ -148,5 +150,65 @@ export class MixedCheque {
       return 0;
     }
     return aIsUnlocked ? 1 : -1; // Based on Rust Ord: Unlocked > Cheque
+  }
+  /**
+   * Encodes the MixedCheque to CBOR as a tagged enum.
+   * Calls the .toCbor() method of the inner Cheque or Unlocked value
+   * and tags the resulting bytes.
+   * Tag 122 = Cheque
+   * Tag 121 = Unlocked
+   * @returns {Uint8Array} The CBOR-encoded MixedCheque.
+   */
+  toCbor() {
+    if (this.isCheque()) {
+      return cbor.encodeTaggedRaw(122, this.value.toCbor()); // Tag 122 for Cheque
+    } else {
+      return cbor.encodeTaggedRaw(121, this.value.toCbor()); // Tag 121 for Unlocked
+    }
+  }
+
+  /**
+   * Decodes a MixedCheque from CBOR bytes.
+   * @param {Uint8Array} cborBytes - The CBOR-encoded MixedCheque.
+   * @returns {MixedCheque} A new MixedCheque instance.
+   * @throws {Error} If CBOR is invalid or doesn't represent a MixedCheque.
+   */
+  static fromCbor(cborBytes) {
+    try {
+      const decoded = cbor.decode(cborBytes);
+      console.log(decoded);
+
+      // if (
+      //   !decoded || instanceof(decoded) == "Tag"
+      // ) {
+      //   throw new Error(
+      //     "Invalid CBOR structure for MixedCheque. Expected a Tag(bytes).",
+      //   );
+      // }
+      console.log(decoded);
+      const tag = decoded.tag;
+
+      const v0 = decoded.value[0];
+      const chequeBody = new ChequeBody(
+        v0[0],
+        v0[1],
+        v0[2],
+        new Uint8Array(v0[3]),
+      );
+      const signature = new Uint8Array(decoded.value[1]);
+
+      const v2 = decoded.value[2] || null;
+      if (tag === 121) {
+        return MixedCheque.fromUnlocked(
+          new Unlocked(chequeBody, signature, new Uint8Array(decoded.value[2])),
+        );
+      } else if (tag === 122) {
+        return MixedCheque.fromCheque(new Cheque(chequeBody, signature));
+      } else {
+        throw new Error(`Unknown MixedCheque CBOR tag: ${tag}`);
+      }
+    } catch (error) {
+      throw new Error(`MixedCheque fromCbor failed: ${error.message}`);
+    }
   }
 }

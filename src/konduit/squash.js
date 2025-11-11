@@ -105,4 +105,37 @@ export class Squash {
       cbor.encode(this.signature),
     ]);
   }
+
+  /**
+   * Decodes a Squash from CBOR bytes.
+   * @param {Uint8Array} cborBytes - The CBOR-encoded squash.
+   * @returns {Squash} A new Squash instance.
+   * @throws {Error} If CBOR is invalid or doesn't represent a Squash.
+   */
+  static fromCbor(cborBytes) {
+    try {
+      const decoded = cbor.decode(cborBytes);
+
+      if (
+        !Array.isArray(decoded) ||
+        decoded.length !== 2 ||
+        !Array.isArray(decoded[0]) || // The decoded body should be an array
+        !decoded[1] // Check for signature (will catch null/undefined)
+      ) {
+        throw new Error(
+          "Invalid CBOR structure for Squash. Expected [body, signature].",
+        );
+      }
+
+      // Re-encode the decoded body array to get its CBOR bytes.
+      const bodyCborBytes = cbor.encodeAsIndefinite(decoded[0]);
+      const body = SquashBody.fromCbor(bodyCborBytes);
+      // Coerce signature to Uint8Array
+      const signature = new Uint8Array(decoded[1]);
+
+      return new Squash(body, signature);
+    } catch (error) {
+      throw new Error(`Squash fromCbor failed: ${error.message}`);
+    }
+  }
 }

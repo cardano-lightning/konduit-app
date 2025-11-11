@@ -101,4 +101,39 @@ export class Unlocked {
       cbor.encode(this.secret),
     ]);
   }
+  /**
+   * Decodes an Unlocked from CBOR bytes.
+   * @param {Uint8Array} cborBytes - The CBOR-encoded unlocked cheque.
+   * @returns {Unlocked} A new Unlocked instance.
+   * @throws {Error} If CBOR is invalid or doesn't represent an Unlocked.
+   */
+  static fromCbor(cborBytes) {
+    try {
+      const decoded = cbor.decode(cborBytes);
+
+      if (
+        !Array.isArray(decoded) ||
+        decoded.length !== 3 ||
+        !Array.isArray(decoded[0]) || // The decoded body should be an array
+        !decoded[1] || // Check for signature (will catch null/undefined)
+        !decoded[2] // Check for secret (will catch null/undefined)
+      ) {
+        throw new Error(
+          "Invalid CBOR structure for Unlocked. Expected [body, signature, secret].",
+        );
+      }
+
+      // Re-encode the decoded body array to get its CBOR bytes.
+      const bodyCborBytes = cbor.encodeAsIndefinite(decoded[0]);
+      const body = ChequeBody.fromCbor(bodyCborBytes);
+
+      // Coerce signature and secret to Uint8Array
+      const signature = new Uint8Array(decoded[1]);
+      const secret = new Uint8Array(decoded[2]);
+
+      return new Unlocked(body, signature, secret);
+    } catch (error) {
+      throw new Error(`Unlocked fromCbor failed: ${error.message}`);
+    }
+  }
 }

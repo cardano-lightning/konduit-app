@@ -43,5 +43,14 @@ describe("Squash", () => {
     const cborData = squash.toCbor();
     expect(cborData).toBeInstanceOf(Uint8Array);
     expect(cborData.length).toBeGreaterThan(0);
+
+    // --- CBOR Roundtrip ---
+    const decoded = Squash.fromCbor(cborData);
+    expect(decoded).toBeInstanceOf(Squash);
+    expect(decoded.body).toBeInstanceOf(SquashBody);
+    expect(decoded.body.amount).toBe(body.amount);
+    expect(decoded.body.index).toBe(body.index);
+    expect(decoded.body.exclude).toEqual(body.exclude);
+    expect(decoded.signature).toEqual(squash.signature);
   });
 });

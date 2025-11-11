@@ -84,4 +84,34 @@ export class Cheque {
       cbor.encode(this.signature),
     ]);
   }
+  /**
+   * Decodes a Cheque from CBOR bytes.
+   * @param {Uint8Array} cborBytes - The CBOR-encoded cheque.
+   * @returns {Cheque} A new Cheque instance.
+   * @throws {Error} If CBOR is invalid or doesn't represent a Cheque.
+   */
+  static fromCbor(cborBytes) {
+    try {
+      // The CBOR decoder will parse the indefinite-length array
+      // and return a definite-length JS array: [decodedBody, decodedSignature]
+      const decoded = cbor.decode(cborBytes);
+      if (
+        !Array.isArray(decoded) ||
+        decoded.length !== 2 ||
+        !Array.isArray(decoded[0]) || // The decoded body should be an array
+        !(decoded[1] instanceof Uint8Array) // The signature
+      ) {
+        throw new Error(
+          "Invalid CBOR structure for Cheque. Expected [body, signature].",
+        );
+      }
+      const bodyCborBytes = cbor.encodeAsIndefinite(decoded[0]);
+      const body = ChequeBody.fromCbor(bodyCborBytes);
+      const signature = decoded[1];
+
+      return new Cheque(body, signature);
+    } catch (error) {
+      throw new Error(`Cheque fromCbor failed: ${error.message}`);
+    }
+  }
 }

@@ -74,4 +74,37 @@ describe("SquashBody", () => {
       consoleErrorMock.mockRestore();
     });
   });
+
+  describe("CBOR Roundtrip", () => {
+    it("should correctly serialise and deserialise to/from CBOR", () => {
+      const body = new SquashBody(100, 5, [0, 2, 4]);
+
+      const cborData = body.toCbor();
+      expect(cborData).toBeInstanceOf(Uint8Array);
+
+      const decoded = SquashBody.fromCbor(cborData);
+      expect(decoded).toBeInstanceOf(SquashBody);
+      expect(decoded.amount).toBe(body.amount);
+      expect(decoded.index).toBe(body.index);
+      expect(decoded.exclude).toEqual(body.exclude);
+    });
+
+    it("should handle empty exclude list", () => {
+      const body = new SquashBody(100, 5, []);
+      const cborData = body.toCbor();
+      const decoded = SquashBody.fromCbor(cborData);
+      expect(decoded.amount).toBe(body.amount);
+      expect(decoded.index).toBe(body.index);
+      expect(decoded.exclude).toEqual(body.exclude);
+    });
+
+    it("should handle zero body", () => {
+      const body = SquashBody.zero();
+      const cborData = body.toCbor();
+      const decoded = SquashBody.fromCbor(cborData);
+      expect(decoded.amount).toBe(0);
+      expect(decoded.index).toBe(0);
+      expect(decoded.exclude).toEqual([]);
+    });
+  });
 });
