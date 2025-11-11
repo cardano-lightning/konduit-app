@@ -131,6 +131,11 @@ watch(bech32Addr, generateQR, {
     <div id="address-section">
       <h2>Address</h2>
       <div>
+        <h2>Verification key</h2>
+        <span>{{ hex.encode(verificationKey) }}</span>
+      </div>
+
+      <div>
         <span class="address" :title="bech32Addr">{{ truncedAddr }}</span>
         <Copy
           class="button"

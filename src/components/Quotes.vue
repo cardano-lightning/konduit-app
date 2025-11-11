@@ -35,7 +35,7 @@ const setItemError = (channelId, error) => {
 const setItemQuote = (channelId, quote) => {
   const index = quotes.findIndex(q => channelId === q.channelId);
   const newQuoteItem = { ...quotes[index], quote: quote };
-  if (index !== -1) return;
+  if (index === -1) return;
   console.log("Updating quote item for channel", channelId, "with quote", quote);
   quotes.splice(index, 1, newQuoteItem);
 };
@@ -48,7 +48,7 @@ const isQuoteLoading = (quoteItem) => {
 const loadQuote = async (quoteItem) => {
   try {
     console.log("Requesting quote for channel", quoteItem.channelId, "for amount", props.invoice.amount, "to payee", props.invoice.payee);
-    let quote = quoteItem.channel.quote(props.invoice.amount, props.invoice.payee);
+    let quote = await quoteItem.channel.quote(props.invoice.amount, props.invoice.payee);
     setItemQuote(quoteItem.channelId, quote);
   } catch (err) {
     setItemError(quoteItem.channelId, err.message || 'Failed to get quote');
@@ -89,6 +89,18 @@ const formattedExpiry = computed(() => {
   return new Date(props.invoice.expiry).toLocaleString();
 });
 
+const emit = defineEmits(["quoteSelected"]);
+
+const quoteSelected = (channelId) => {
+  const quoteItem = quotes.find(q => q.channelId === channelId);
+  if (!quoteItem) {
+    console.error("Quote item not found for channelId:", channelId);
+    return;
+  }
+  console.log("Quote selected:", quoteItem);
+  emit("quoteSelected", quoteItem);
+};
+
 </script>
 
 <template>
@@ -99,20 +111,24 @@ const formattedExpiry = computed(() => {
           <th>Channel</th>
           <th>Quote</th>
           <th>Status</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="quoteItem in quotes" :key="quoteItem.channelId">
-          <td>{{ abbreviate(quoteItem.channel.tagHex, 8, 8) }}</td>
+          <td>{{ abbreviate(quoteItem.channelId, 8, 8) }}</td>
           <td>
             <span v-if="isQuoteLoading(quoteItem)">Loading...</span>
             <span v-else-if="quoteItem.error">Error: {{ quoteItem.error }}</span>
-            <span v-else>{{ new Intl.NumberFormat().format(quoteItem.quote.amount) }} sats</span>
+            <span v-else>{{ quoteItem.quote.amount }} sats</span>
           </td>
           <td>
             <span v-if="isQuoteLoading(quoteItem)">⏳</span>
             <span v-else-if="quoteItem.error">❌</span>
             <span v-else>✅</span>
+          </td>
+          <td>
+              <button @click="quoteSelected(quoteItem.channelId)">Pay</button>
           </td>
         </tr>
       </tbody>
@@ -122,3 +138,29 @@ const formattedExpiry = computed(() => {
     [ No channels available to get quotes from ]
   </div>
 </template>
+
+<style scoped>
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+tr:hover {
+  background-color: #e9e9e9;
+}
+
+</style>
