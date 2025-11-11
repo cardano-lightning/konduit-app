@@ -28,7 +28,7 @@ export class SquashBody {
     return {
       amount: this.amount,
       index: this.index,
-      exclude: this.exclude,
+      exclude: [...this.exclude],
     };
   }
 

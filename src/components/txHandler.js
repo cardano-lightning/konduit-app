@@ -77,6 +77,7 @@ export async function open(adaptorInfo, tag, amount_ada) {
 
   const tx = new KonduitTx(txHash, "Facilitate", "Pending", [[tag, "Open"]]);
   connector.signAndSubmit(transaction, signingKey.value).then(
+    // createDummyPromise().then (
     (res) => {
       // Update channels ref
       channelsAppend(channel);

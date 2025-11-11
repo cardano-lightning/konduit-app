@@ -1,23 +1,26 @@
 <script setup>
 import { ref } from "vue";
 import TheHeader from "../components/TheHeader.vue";
+import InvoiceInput from "../components/InvoiceInput.vue";
 import QrScan from "../components/QrScan.vue";
 import InvoiceDetails from "../components/InvoiceDetails.vue";
 import { parsePayRequest } from "../bln/payRequest.js";
 
-const invoiceInput = ref(null); // Holds the raw invoice string
-const parsedInvoice = ref(null); // Holds the parsed object
+const invoice = ref(null); // Holds the raw invoice string
+const quotes = ref(null); // Holds quotes
+const quote = ref(null); // Holds selected quote
+const pendingPay = ref(null); // Holds pay info
 const error = ref(null);
 
 // Called on successful QR scan
 const onQrScan = (payload) => {
-  invoiceInput.value = payload;
+  invoiceRaw.value = payload;
   handleParse(payload); // Immediately try to parse
 };
 
 // Called by the "Next" button in manual mode
 const handleManualNext = () => {
-  handleParse(invoiceInput.value);
+  handleParse(invoiceRaw.value);
 };
 
 // The core parsing logic
@@ -30,7 +33,6 @@ const handleParse = (rawInvoice) => {
 
   try {
     // This now uses the new, smarter parser
-    parsedInvoice.value = parsePayRequest(rawInvoice);
     console.log("Parsed request:", parsedInvoice.value);
   } catch (e) {
     console.error("Failed to parse request:", e);
@@ -41,8 +43,8 @@ const handleParse = (rawInvoice) => {
 
 // Resets the view to the initial QR scan state
 const goBack = () => {
-  invoiceInput.value = null;
-  parsedInvoice.value = null;
+  invoiceRaw.value = null;
+  invoice.value = null;
   error.value = null;
 };
 </script>
@@ -50,46 +52,14 @@ const goBack = () => {
 <template>
   <TheHeader />
   <div class="pay-container">
-    <!-- STATE 3: INVOICE DETAILS -->
-    <div v-if="parsedInvoice" class="details-view">
-      <InvoiceDetails :invoice="parsedInvoice" />
-    </div>
-
-    <!-- STATES 1 & 2: INPUT -->
-    <div v-else class="input-view">
-      <div class="input">
-        <!-- STATE 1: SCAN MODE -->
-        <!-- Added .qr-scan-container to give this div dimensions -->
-        <div v-if="invoiceInput == null" class="qr-scan-container-x">
-          <QrScan @payload="onQrScan" />
-        </div>
-        <!-- STATE 2: MANUAL MODE -->
-        <div v-else>
-          <form @submit.prevent="handleManualNext">
-            <textarea
-              id="invoice"
-              v-model="invoiceInput"
-              placeholder="lnb... or lnurl..."
-            />
-          </form>
-        </div>
-      </div>
-
-      <div v-if="error" class="error-message">
-        {{ error }}
-      </div>
-
-      <div class="buttons">
-        <!-- STATE 1 BUTTONS -->
-        <div v-if="invoiceInput == null">
-          <button @click="invoiceInput = ''">Enter Manually</button>
-        </div>
-        <!-- STATE 2 BUTTONS -->
-        <div v-else>
-          <button @click="handleManualNext">Next</button>
-        </div>
-      </div>
-    </div>
+    <!--
+    <PendingPay v-if="pendingPay" :pendingPay="pendingPay" />
+    <QuoteDetails v-else-if="quote" :quote="quote" :invoice="parsedInvoice"/>
+    <QuoteList v-else-if="quotes != null" :quotes="quotes" @quote="selectedQuote"/>
+    -->
+    <span v-if="null">no</span>
+    <InvoiceDetails v-else-if="invoice" :invoice="invoice" @quotes="quotes" />
+    <InvoiceInput v-else @invoice="invoice" />
   </div>
 </template>
 

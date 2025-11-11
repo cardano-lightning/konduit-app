@@ -79,6 +79,9 @@ export class Channel {
     return this.adaptor().chSquash(this.l2.squash);
   }
 
+  sync() {
+    return Promise.all([this.squash()]);
+  }
   /**
    * Send current squash to adaptor
    * */
@@ -161,8 +164,8 @@ export class Channel {
    * This static method acts as a "factory" for rebuilding the class.
    *
    * @param {object} data - The plain object retrieved from IndexedDB.
-   * @param {Uint8Array} data.key
-   * @param {Uint8Array} data.tag
+   * @param {string} data.key
+   * @param {string} data.tag
    * @param {any} data.adaptorInfo
    * @param {any} data.l1
    * @param {any} data.l2
@@ -184,8 +187,8 @@ export class Channel {
 
     try {
       return new Channel(
-        data.key,
-        data.tag,
+        hex.decode(data.key),
+        hex.decode(data.tag),
         AdaptorInfo.deserialise(data.adaptorInfo),
         L1Channel.deserialise(data.l1),
         MixedReceipt.deserialise(data.l2),

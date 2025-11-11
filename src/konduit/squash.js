@@ -27,7 +27,7 @@ export class Squash {
   serialise() {
     return {
       body: this.body.serialise(),
-      signature: this.signature,
+      signature: hex.encode(this.signature),
     };
   }
 
@@ -35,17 +35,17 @@ export class Squash {
    * Deserialises a plain object from storage back into a Squash instance.
    * @param {object} data - The plain object.
    * @param {any} data.body
-   * @param {Uint8Array} data.signature
+   * @param {string} data.signature
    * @returns {Squash} A new Squash instance.
    * @throws {Error} If data is invalid.
    */
   static deserialise(data) {
-    if (!data || !data.body || !(data.signature instanceof Uint8Array)) {
+    if (!data || !data.body || !data.signature) {
       throw new Error("Invalid or incomplete data for Squash deserialisation.");
     }
     try {
       const body = SquashBody.deserialise(data.body);
-      return new Squash(body, data.signature);
+      return new Squash(body, hex.decode(data.signature));
     } catch (error) {
       throw new Error(`Squash deserialisation failed: ${error.message}`);
     }

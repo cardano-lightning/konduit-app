@@ -1,4 +1,5 @@
 import { timestampSecs } from "../utils/time.js";
+import * as hex from "../utils/hex.js";
 
 /**
  * A unique identifier, typically a Uint8Array.
@@ -109,10 +110,10 @@ export class KonduitTx {
    */
   serialise() {
     return {
-      txHash: this.txHash,
+      txHash: hex.encode(this.txHash),
       walletTag: this.walletTag,
       phase: this.phase,
-      steps: this.steps,
+      steps: this.steps.map(([tag, step]) => [hex.encode(tag), step]),
       updatedAt: this.updatedAt,
     };
   }
@@ -126,7 +127,7 @@ export class KonduitTx {
   static deserialise(data) {
     if (
       !data ||
-      !(data.txHash instanceof Uint8Array) ||
+      typeof data.txHash !== "string" ||
       typeof data.walletTag !== "string" ||
       typeof data.phase !== "string" ||
       !Array.isArray(data.steps) ||
@@ -141,10 +142,10 @@ export class KonduitTx {
     // as seen in the other deserialise examples.
     try {
       return new KonduitTx(
-        data.txHash,
+        hex.decode(data.txHash),
         data.walletTag,
         data.phase,
-        data.steps,
+        data.steps.map(([tag, step]) => [hex.decode(tag), step]),
         data.updatedAt,
       );
     } catch (error) {

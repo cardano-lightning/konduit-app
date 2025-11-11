@@ -114,6 +114,22 @@ async function fromDb(label, ref) {
 }
 
 /**
+ * Loads a value from the database and sets it to a Vue ref.
+ * If the value is undefined in the DB, the ref is not modified.
+ * @param {string} label - The key to retrieve from the database.
+ * @param {import('vue').Ref<any>} ref - The Vue ref to update with the loaded value.
+ * @param {function (any) : any} with_ - Deserializer. FIXME. : why is this this asymmetric to toDb
+ * @returns {Promise<void>} A promise that resolves when the operation is complete.
+ */
+async function fromDbWith(label, ref, with_) {
+  return get(label).then((x) => {
+    if (typeof x !== "undefined") {
+      ref.value = with_(x);
+    }
+  });
+}
+
+/**
  * Persists a value to the database.
  * If the value is null or undefined, the key is deleted from the database.
  * @param {string} label - The key to set or delete in the database.
@@ -247,11 +263,14 @@ watch(network, async (curr, _prev) => {
  * */
 export async function initApp() {
   await initDb();
-  console.log("Database initialized");
+  console.log("Database initializing");
   await fromDb(signingKeyLabel, signingKey);
   await fromDb(cardanoConnectorLabel, cardanoConnectorUrl);
   await fromDb(networkLabel, network);
   await fromDb(walletBalanceLabel, walletBalance);
+  await fromDbWith(channelsLabel, channels, (x) => x.map(Channel.deserialise));
+  await fromDbWith(txsLabel, txs, (x) => x.map(KonduitTx.deserialise));
+  console.log("Database initialized");
   return;
 }
 
@@ -341,8 +360,7 @@ export const pollWalletBalance = (interval) => {
     let connector = await cardanoConnector.value;
     walletBalance.value = await connector.balance(verificationKey.value);
   }, interval * 1000);
-}
-
+};
 
 /** @constant {string} The database key for storing the channels. */
 const channelsLabel = "channels";
@@ -367,10 +385,18 @@ watch(channels, async (curr, _prev) => {
   if (appState.value != appStates.load) {
     toDb(
       channelsLabel,
-      curr.map((x) => JSON.stringify(x.serialise())),
+      curr.map((x) => x.serialise()),
     );
   }
 });
+
+export function channelsUpdater() {
+  channels.value.forEach((channel) => {
+    channel
+      .sync()
+      .then((res) => console.log("UPDATE", hex.encode(channel.tag), res));
+  });
+}
 
 /** @constant {string} The database key for storing the txs. */
 const txsLabel = "txs";
@@ -385,7 +411,9 @@ export const txs = ref([]);
  * @param {KonduitTx} tx
  */
 export function txsAppend(tx) {
-  txs.value = [...txs.value, tx];
+  const old = txs.value;
+  old.push(tx);
+  txs.value = old;
 }
 /**
  * Watches the network ref. When it changes, the new value is
@@ -395,7 +423,7 @@ watch(txs, async (curr, _prev) => {
   if (appState.value != appStates.load) {
     toDb(
       txsLabel,
-      curr.map((x) => JSON.stringify(x.serialise())),
+      curr.map((x) => x.serialise()),
     );
   }
 });

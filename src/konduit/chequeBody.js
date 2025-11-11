@@ -32,7 +32,7 @@ export class ChequeBody {
       index: this.index,
       amount: this.amount,
       timeout: this.timeout,
-      lock: this.lock,
+      lock: hex.encode(this.lock),
     };
   }
 
@@ -42,7 +42,7 @@ export class ChequeBody {
    * @param {number} data.index
    * @param {number} data.amount
    * @param {number} data.timeout
-   * @param {Uint8Array} data.lock
+   * @param {string} data.lock
    * @returns {ChequeBody} A new ChequeBody instance.
    * @throws {Error} If data is invalid.
    */
@@ -52,13 +52,18 @@ export class ChequeBody {
       typeof data.index !== "number" ||
       typeof data.amount !== "number" ||
       typeof data.timeout !== "number" ||
-      !(data.lock instanceof Uint8Array)
+      typeof data.lock !== "string"
     ) {
       throw new Error(
         "Invalid or incomplete data for ChequeBody deserialisation.",
       );
     }
-    return new ChequeBody(data.index, data.amount, data.timeout, data.lock);
+    return new ChequeBody(
+      data.index,
+      data.amount,
+      data.timeout,
+      hex.decode(data.lock),
+    );
   }
 
   /**

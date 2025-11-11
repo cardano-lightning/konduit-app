@@ -4,7 +4,13 @@ import TheHeader from "../components/TheHeader.vue";
 import AdaptorInfo from "../components/AdaptorInfo.vue";
 import { Adaptor } from "../konduit/adaptor.js";
 import { PROTOCOL_MIN_LOVELACE } from "../konduit/constants.js";
-import { cardanoConnector, signingKey, pollWalletBalance, walletBalance, verificationKey } from "../store.js";
+import {
+  cardanoConnector,
+  signingKey,
+  pollWalletBalance,
+  walletBalance,
+  verificationKey,
+} from "../store.js";
 import wasm from "../utils/wasm-loader.js";
 import { open } from "../components/txHandler.js";
 import * as hex from "../utils/hex.js";
@@ -86,7 +92,7 @@ const amountError = computed(() => {
     return "Amount must be greater than 0.";
   }
 
-  if(walletBalanceAda.value === null) return "";
+  if (walletBalanceAda.value === null) return "";
   if (amount.value > walletBalanceAda.value) {
     return `Amount cannot exceed available balance of ${walletBalanceAda.value} Ada.`;
   }
@@ -131,7 +137,7 @@ async function submitForm() {
       : Uint8Array.from(tag.value.match(/../g), (byte) => parseInt(byte, 16));
 
   try {
-    open(adaptorInfo.value, tagBytes, amount.value);
+    pendingTx.value = open(adaptorInfo.value, tagBytes, amount.value);
   } catch (e) {
     pendingTx.value(
       new Promise((resolve, reject) =>

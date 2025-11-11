@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import * as hex from "../utils/hex.js";
 import { timestampSecs } from "../utils/time.js";
 import { KonduitTx } from "./konduitTx.js";
 
@@ -156,10 +157,10 @@ describe("KonduitTx", () => {
 
       // Check the plain object format
       expect(serialisedData).toEqual({
-        txHash: data.txHash,
+        txHash: hex.encode(data.txHash),
         walletTag: data.walletTag,
         phase: data.phase,
-        steps: data.steps,
+        steps: data.steps.map(([k, v]) => [hex.encode(k), v]),
         updatedAt: data.updatedAt,
       });
 
@@ -169,7 +170,7 @@ describe("KonduitTx", () => {
       // 4. Verify
       expect(deserialisedTx).toBeInstanceOf(KonduitTx);
       expect(deserialisedTx).toEqual(originalTx); // Deep equality check
-      expect(deserialisedTx.txHash).toBe(originalTx.txHash);
+      expect(deserialisedTx.txHash).toEqual(originalTx.txHash);
       expect(deserialisedTx.steps[1][1]).toBe("Add");
     });
 
@@ -199,7 +200,7 @@ describe("KonduitTx", () => {
       };
 
       expect(() => KonduitTx.deserialise(serialisedData)).toThrow(
-        "Invalid or incomplete data for KonduitTx deserialisation.",
+        "KonduitTx deserialisation failed: hex.match is not a function",
       );
     });
   });

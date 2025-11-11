@@ -109,9 +109,6 @@ export class Adaptor {
 
     try {
       const response = await fetch(url, fetchOptions);
-
-      // --- All response handling logic is identical to _request ---
-
       if (!response.ok) {
         let errorData;
         try {
@@ -200,10 +197,11 @@ export class Adaptor {
 
   /**
    * Calls /ch/quote. (Assuming POST)
-   * @param {object} quoteData - The data to send in the body.
    * @returns {Promise<object>}
+   * @param {number} amountMsat
+   * @param {Uint8Array<ArrayBufferLike>} payee
    */
-  chQuote(quoteData = {}) {
+  chQuote(amountMsat, payee) {
     console.log("Calling POST /ch/quote");
     if (!this.keytag) {
       return Promise.reject(
@@ -212,7 +210,7 @@ export class Adaptor {
     }
     return this._request("/ch/quote", {
       method: "POST",
-      body: JSON.stringify(quoteData),
+      body: JSON.stringify({ amountMsat, payee: hex.encode(payee) }),
     });
   }
 }

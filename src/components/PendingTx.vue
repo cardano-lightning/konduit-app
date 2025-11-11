@@ -27,7 +27,7 @@ onMounted(async () => {
     // Wait for the promise to resolve
     const res = await props.pendingTx;
     // Set success state
-    txHash.value = res;
+    txHash.value = `Transaction submitted`;
   } catch (e) {
     // Set error state
     error.value = e.message || "An unknown error occurred during submission.";
@@ -48,7 +48,7 @@ onMounted(async () => {
     <!-- 2. SUCCESS STATE -->
     <p v-if="isPending">...pending...</p>
     <!-- 3. ERROR STATE -->
-    <p v-if="txHash">{{ JSON.stringify(txHash, null, 2) }}</p>
+    <p v-if="txHash">{{ txHash }}</p>
     <div v-else-if="error" class="error-container">
       <h3>Transaction Failed</h3>
       <p class="error-message">{{ error }}</p>
