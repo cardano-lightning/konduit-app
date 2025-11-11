@@ -93,4 +93,44 @@ describe("MixedReceipt serialise/deserialise roundtrip (no mocks)", () => {
     expect(deserialisedReceipt.mixedCheques.length).toBe(0);
     expect(deserialisedReceipt.squash.body.index).toBe(0);
   });
+
+  describe("CBOR Roundtrip", () => {
+    it("should correctly serialise and deserialise a mixed receipt", () => {
+      // 1. Create the original data using real classes
+      const cheque6 = createRealCheque(6);
+      const unlocked7 = createRealUnlocked(7);
+      const originalSquash = createRealSquash(2000, 5, [1, 3]);
+      const mixedCheques = [
+        MixedCheque.fromCheque(cheque6),
+        MixedCheque.fromUnlocked(unlocked7),
+        MixedCheque.fromCheque(createRealCheque(8)),
+        MixedCheque.fromUnlocked(createRealUnlocked(10)),
+      ];
+      const receipt = new MixedReceipt(originalSquash, mixedCheques);
+      const cborData = receipt.toCbor();
+      expect(cborData).toBeInstanceOf(Uint8Array);
+
+      const decoded = MixedReceipt.fromCbor(cborData);
+
+      // Check squash
+      expect(decoded.squash).toBeInstanceOf(Squash);
+      expect(decoded.squash.body.index).toBe(receipt.squash.body.index);
+      expect(decoded.squash.body.amount).toBe(receipt.squash.body.amount);
+      expect(decoded.squash.body.exclude).toEqual(receipt.squash.body.exclude);
+      expect(decoded.squash.signature).toEqual(receipt.squash.signature);
+
+      // Check mixed cheques
+      expect(decoded.mixedCheques.length).toBe(receipt.mixedCheques.length);
+
+      // Cheque6
+      const decodedCheque = decoded.mixedCheques[0].asCheque();
+      expect(decodedCheque.body.index).toBe(cheque6.body.index);
+      expect(decodedCheque.signature).toEqual(cheque6.signature);
+
+      // unlocked7
+      const decodedUnlocked = decoded.mixedCheques[1].asUnlocked();
+      expect(decodedUnlocked.body.index).toBe(unlocked7.body.index);
+      expect(decodedUnlocked.secret).toEqual(unlocked7.secret);
+    });
+  });
 });

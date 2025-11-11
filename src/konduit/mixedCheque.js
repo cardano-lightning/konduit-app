@@ -176,8 +176,6 @@ export class MixedCheque {
   static fromCbor(cborBytes) {
     try {
       const decoded = cbor.decode(cborBytes);
-      console.log(decoded);
-
       // if (
       //   !decoded || instanceof(decoded) == "Tag"
       // ) {
@@ -185,22 +183,29 @@ export class MixedCheque {
       //     "Invalid CBOR structure for MixedCheque. Expected a Tag(bytes).",
       //   );
       // }
-      console.log(decoded);
-      const tag = decoded.tag;
+      return MixedCheque.fromCborDecoded(decoded.tag, decoded.value);
+    } catch (error) {
+      throw new Error(`MixedCheque fromCbor failed: ${error.message}`);
+    }
+  }
 
-      const v0 = decoded.value[0];
+  /**
+   * @param {number} tag
+   * @param {any[]} value
+   */
+  static fromCborDecoded(tag, value) {
+    try {
+      const v0 = value[0];
       const chequeBody = new ChequeBody(
         v0[0],
         v0[1],
         v0[2],
         new Uint8Array(v0[3]),
       );
-      const signature = new Uint8Array(decoded.value[1]);
-
-      const v2 = decoded.value[2] || null;
+      const signature = new Uint8Array(value[1]);
       if (tag === 121) {
         return MixedCheque.fromUnlocked(
-          new Unlocked(chequeBody, signature, new Uint8Array(decoded.value[2])),
+          new Unlocked(chequeBody, signature, new Uint8Array(value[2])),
         );
       } else if (tag === 122) {
         return MixedCheque.fromCheque(new Cheque(chequeBody, signature));

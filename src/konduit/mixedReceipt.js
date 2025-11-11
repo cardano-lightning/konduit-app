@@ -1,12 +1,14 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 
 import * as uint8Array from "../utils/uint8Array.js";
+import * as cbor from "../cardano/cbor.js";
 
 import { Squash } from "./squash.js";
 import { MixedCheque } from "./mixedCheque.js";
 import { Unlocked } from "./unlocked.js";
 import { MAX_UNSQUASHED } from "./constants.js";
 import { Receipt } from "./receipt.js";
+import { SquashBody } from "./squashBody.js";
 
 export class MixedReceipt {
   /**
@@ -267,5 +269,44 @@ export class MixedReceipt {
       }
     }
     return squashBody;
+  }
+
+  /**
+   * @returns {Uint8Array} The CBOR-encoded MixedReceipt.
+   */
+  toCbor() {
+    const squash = this.squash.toCbor();
+    const cheques = cbor.encodeAsIndefiniteRaw(
+      this.mixedCheques.map((mc) => mc.toCbor()),
+    );
+    return cbor.encodeAsIndefiniteRaw([squash, cheques]);
+  }
+
+  /**
+   * Decodes a MixedReceipt from CBOR bytes.
+   * @param {Uint8Array} cborBytes - The CBOR-encoded MixedReceipt
+   * @returns {MixedReceipt} A new MixedReceipt instance.
+   * @throws {Error} If CBOR is invalid or doesn't represent a SquashBody.
+   */
+  static fromCbor(cborBytes) {
+    try {
+      const decoded = cbor.decode(cborBytes);
+      if (!Array.isArray(decoded) || decoded.length !== 2) {
+        throw new Error(
+          "Invalid CBOR structure for SquashBody. Expected [amount, index, exclude].",
+        );
+      }
+      const [[[s0, s1, s2], sig], mcs] = decoded;
+      const squash = new Squash(
+        new SquashBody(s0, s1, s2),
+        new Uint8Array(sig),
+      );
+      const mixedCheques = mcs.map((mc) =>
+        MixedCheque.fromCborDecoded(mc.tag, mc.value),
+      );
+      return new MixedReceipt(squash, mixedCheques);
+    } catch (error) {
+      throw new Error(`SquashBody fromCbor failed: ${error.message}`);
+    }
   }
 }

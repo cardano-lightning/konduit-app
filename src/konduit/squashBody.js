@@ -134,9 +134,7 @@ export class SquashBody {
    */
   static fromCbor(cborBytes) {
     try {
-      // cbor-x decoder will return a regular array for the indefinite-length array
       const decoded = cbor.decode(cborBytes);
-
       if (
         !Array.isArray(decoded) ||
         decoded.length !== 3 ||
@@ -148,8 +146,6 @@ export class SquashBody {
           "Invalid CBOR structure for SquashBody. Expected [amount, index, exclude].",
         );
       }
-
-      // The 'exclude' array is already decoded as a JS array
       return new SquashBody(decoded[0], decoded[1], decoded[2]);
     } catch (error) {
       throw new Error(`SquashBody fromCbor failed: ${error.message}`);
