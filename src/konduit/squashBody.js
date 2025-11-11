@@ -93,10 +93,14 @@ export class SquashBody {
   /**
    * Returns the squash body's properties as an array.
    * Note: This returns an iterator for the 'exclude' property.
-   * @returns {[number, number, Iterator<number>]} An array containing amount, index, and an iterator for the excluded indices.
+   * @returns {[number, number | bigint, Iterator<number | bigint>]} An array containing amount, index, and an iterator for the excluded indices.
    */
   asArray() {
-    return [this.amount, this.index, this.exclude[Symbol.iterator]()];
+    return [
+      this.amount,
+      cbor.wrapInt(this.index),
+      this.exclude.map((x) => cbor.wrapInt(x))[Symbol.iterator](),
+    ];
   }
 
   /**
@@ -138,15 +142,17 @@ export class SquashBody {
       if (
         !Array.isArray(decoded) ||
         decoded.length !== 3 ||
-        typeof decoded[0] !== "number" || // amount
-        typeof decoded[1] !== "number" || // index
         !Array.isArray(decoded[2]) // exclude
       ) {
         throw new Error(
           "Invalid CBOR structure for SquashBody. Expected [amount, index, exclude].",
         );
       }
-      return new SquashBody(decoded[0], decoded[1], decoded[2]);
+      return new SquashBody(
+        Number(decoded[0]),
+        Number(decoded[1]),
+        decoded[2].map((x) => Number(x)),
+      );
     } catch (error) {
       throw new Error(`SquashBody fromCbor failed: ${error.message}`);
     }
