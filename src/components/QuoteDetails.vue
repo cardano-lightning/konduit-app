@@ -34,11 +34,12 @@ const pay = async () => {
   let quote = props.quoteInfo.quote;
   let channel = props.quoteInfo.channel;
   console.log("Using quote:", quote);
-  let absoluteTimeout = Date.now() + quote.relativeTimeout * 1000 + TIMEOUT_GRACE_MILLISECONDS;
+  let absoluteTimeout =
+    Date.now() + quote.relativeTimeout + TIMEOUT_GRACE_MILLISECONDS;
   let chequeBody = channel.makeChequeBody(
     quote.amount,
     absoluteTimeout,
-    hex.decode(props.invoice.hash)
+    hex.decode(props.invoice.hash),
   );
 
   const cheque = Cheque.make(signingKey.value, channel.tag, chequeBody);
@@ -55,26 +56,26 @@ const pay = async () => {
 //   if (typeof props.invoice.amount !== "number") return "N/A";
 //   return new Intl.NumberFormat().format(props.invoice.amount);
 // });
-// 
+//
 // // Formats the expiry date
 // const formattedExpiry = computed(() => {
 //   if (!props.invoice.expiry) return "N/A";
 //   return new Date(props.invoice.expiry).toLocaleString();
 // });
-// 
+//
 // // Truncates long strings for display
 // const truncatedPayee = computed(() => {
 //   const dest = props.invoice.payee;
 //   if (!dest) return "N/A";
 //   return abbreviate(dest, 10, 10);
 // });
-// 
+//
 // const truncatedHash = computed(() => {
 //   const hash = props.invoice.hash;
 //   if (!hash) return "N/A";
 //   return abbreviate(hash, 10, 10);
 // });
-// 
+//
 // const getQuotes = () => {
 //   // The value is not important here
 //   emit("invoiceApproved", null);
@@ -182,4 +183,3 @@ const pay = async () => {
   display: flex;
 }
 </style>
-

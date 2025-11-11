@@ -98,7 +98,7 @@ export class Channel {
    * @param {Uint8Array<ArrayBufferLike>} lock
    */
   makeChequeBody(amount, timeout, lock) {
-    const index = this.l2.maxIndex() + 1;
+    const index = this.l2.maxIndex() + 2;
     return new ChequeBody(index, amount, timeout, lock);
   }
 
@@ -150,13 +150,15 @@ export class Channel {
    * newCheque
    * Gets inserted into mixed receipt
    * squash verification
-   * */
+   * @param {Cheque} cheque
+   * @param {{ payee: any; amount: any; paymentSecret: any; finalCltvDelta: any; }} invoiceDetails
+   */
   pay(cheque, invoiceDetails) {
+    this.insertCheque(cheque);
     return this.adaptor().chPay({
       cheque,
       payee: invoiceDetails.payee,
-      amount_msat: invoiceDetails.amountMsat,
-      amountMsat: invoiceDetails.amountMsat,
+      amount_msat: invoiceDetails.amount,
       payment_secret: invoiceDetails.paymentSecret,
       final_cltv_delta: invoiceDetails.finalCltvDelta,
     });
