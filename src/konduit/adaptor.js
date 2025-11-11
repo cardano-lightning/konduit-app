@@ -228,7 +228,7 @@ export class Adaptor {
     }
     return this._request("/ch/quote", {
       method: "POST",
-      body: JSON.stringify({ amount_msat: amountMsat, payee: payee }),
+      body: JSON.stringify({ Simple: { amount_msat: amountMsat, payee: payee }}),
     });
   }
 
@@ -246,7 +246,7 @@ export class Adaptor {
       ...payBody,
       cheque: hex.encode(payBody.cheque.toCbor()),
     });
-    return this._request("/ch/quote", {
+    return this._request("/ch/pay", {
       method: "POST",
       body,
     });

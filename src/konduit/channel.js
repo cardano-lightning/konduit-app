@@ -152,9 +152,14 @@ export class Channel {
    * squash verification
    * */
   pay(cheque, invoiceDetails) {
-    // 1. INSERT INTO L2
-    // 2. POST
-    throw Error("Not yet implemented");
+    return this.adaptor().chPay({
+      cheque,
+      payee: invoiceDetails.payee,
+      amount_msat: invoiceDetails.amountMsat,
+      amountMsat: invoiceDetails.amountMsat,
+      payment_secret: invoiceDetails.paymentSecret,
+      final_cltv_delta: invoiceDetails.finalCltvDelta,
+    });
   }
 
   /**

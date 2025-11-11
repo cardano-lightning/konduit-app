@@ -3,6 +3,7 @@ import { ref, watch } from "vue";
 import TheHeader from "../components/TheHeader.vue";
 import InvoiceInput from "../components/InvoiceInput.vue";
 import Quotes from "../components/Quotes.vue";
+import QuoteDetails from "../components/QuoteDetails.vue";
 import QrScan from "../components/QrScan.vue";
 import InvoiceDetails from "../components/InvoiceDetails.vue";
 import { parsePayRequest } from "../bln/payRequest.js";
@@ -14,11 +15,20 @@ const invoice = ref({
     "description": "Oopsie!!",
     "payee": "022a15e511bc5e5eb10e3d3d777fa098e9087fcd878917986ee3a157340becdbfa",
     "expiry": 1762389888000,
-    "hash": "f041c5b31a015b17dafa010cc099fe00c031f167c0ad5a399c59d63ff0069841"
-}); // Holds the raw invoice string
+    "hash": "f041c5b31a015b17dafa010cc099fe00c031f167c0ad5a399c59d63ff0069841",
+    "paymentSecret": "0066b6a2af060d9bc4c4ac79078ad16c817a3141cfda35b43e7a1be60704d3b3",
+    "finalCltvDelta": 80
+});
+
 const invoiceApproved = ref(false); // Whether the user approved the invoice
-const quotes = ref(null); // Holds quotes
-const quote = ref(null); // Holds selected quote
+// quote item structure:
+//  {
+//    channelId: tagger(channel),
+//    channel: [channel],
+//    quote: [response from the server]
+//    error: null, // or error message
+//  };
+const quoteInfo = ref(null);
 const pendingPay = ref(null); // Holds pay info
 const error = ref(null);
 
@@ -67,7 +77,8 @@ const goBack = () => {
     <QuoteList v-else-if="quotes != null" :quotes="quotes" @quote="selectedQuote"/>
     -->
     <span v-if="null">no</span>
-    <Quotes v-if="invoiceApproved" :invoice="invoice" @quoteSelected="(val) => { quote = val }" />
+    <QuoteDetails v-else-if="quoteInfo" :quoteInfo="quoteInfo" :invoice="invoice"/>
+    <Quotes v-else-if="invoiceApproved" :invoice="invoice" @quoteSelected="(val) => { quoteInfo = val }" />
     <InvoiceDetails v-else-if="invoice" :invoice="invoice" @invoiceApproved="(_) => { invoiceApproved = true }"/>
     <InvoiceInput v-else @invoice="(val) => { console.log(val); invoice = val }"/>
   </div>
