@@ -27,6 +27,7 @@ const handleParse = (rawInvoice) => {
     return;
   }
   try {
+    console.log("Parsed request:", parsePayRequest(rawInvoice));
     emit("invoice", parsePayRequest(rawInvoice));
   } catch (e) {
     console.error("Failed to parse request:", e);
@@ -47,7 +48,7 @@ const handleParse = (rawInvoice) => {
       {{ error }}
     </div>
     <div class="buttons">
-      <button v-if="invoiceRaw == null" @click="invoiceRaw = ''">
+      <button v-if="invoiceRaw == null" @click="invoiceRaw = 'lntb123450n1p5sh2fspp57pqutvc6q9d30kh6qyxvpx07qrqrrut8czk45wvut8trluqxnpqsdqdfahhqumfv5sjzcqzzsxqr3jssp5qpntdg40qcxeh3xy43us0zk3djqh5v2peldrtdp70gd7vpcy6wes9qxpqysgqa54uah5f9sw065t9unereh0vm0jjqwq6tulnd42pnxa6yl8e92xpkpgz5tpw0fx7v05lfkl93qumr80dk4xrnakkgh57xxk53e3kccqp5kwles'">
         Enter Manually
       </button>
       <button v-else @click="handleManualNext">Next</button>

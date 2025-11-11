@@ -12,6 +12,8 @@ const props = defineProps({
 
 const router = useRouter();
 
+const emit = defineEmits(["invoiceApproved"]);
+
 // Formats the amount (assuming it's in sats)
 const formattedAmount = computed(() => {
   if (typeof props.invoice.amount !== "number") return "N/A";
@@ -25,19 +27,21 @@ const formattedExpiry = computed(() => {
 });
 
 // Truncates long strings for display
-const truncatedDestination = computed(() => {
-  const dest = props.invoice.destination;
+const truncatedPayee = computed(() => {
+  const dest = props.invoice.payee;
   if (!dest) return "N/A";
   return abbreviate(dest, 10, 10);
 });
 
+const truncatedHash = computed(() => {
+  const hash = props.invoice.hash;
+  if (!hash) return "N/A";
+  return abbreviate(hash, 10, 10);
+});
+
 const getQuotes = () => {
-  // Now we navigate to quotes, passing the *raw* invoice string,
-  // which is the most reliable way to get quotes.
-  router.push({
-    path: "/quotes",
-    query: { invoice: props.invoice.raw },
-  });
+  // The value is not important here
+  emit("invoiceApproved", null);
 };
 </script>
 
@@ -64,12 +68,12 @@ const getQuotes = () => {
 
         <div class="detail-label">Destination</div>
         <div class="detail-value mono">
-          {{ truncatedDestination }}
+          {{ truncatedPayee }}
         </div>
 
         <div class="detail-label">Hash</div>
         <div class="detail-value mono">
-          {{ invoice.hash ? `${invoice.hash.substring(0, 20)}...` : "N/A" }}
+          {{ truncatedHash }}
         </div>
       </div>
       <div class="buttons">
@@ -140,3 +144,4 @@ const getQuotes = () => {
   display: flex;
 }
 </style>
+

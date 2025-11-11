@@ -71,7 +71,7 @@ export const parsePayRequest = (rawText) => {
             ? Number(BigInt(decoded.millisatoshis) / 1000n)
             : 0),
         description: getTag("description"),
-        destination: decoded.payeeNodeKey,
+        payee: decoded.payeeNodeKey,
         expiry: expiryTimestamp,
         hash: getTag("payment_hash"),
       };

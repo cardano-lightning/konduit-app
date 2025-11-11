@@ -124,7 +124,7 @@ export class Channel {
    * @param {Uint8Array} payee - 33 Byte address
    * @returns {QuoteResponse}
    */
-  quote(amount_msat, payee) {
+  async quote(amount_msat, payee) {
     return this.adaptor().chQuote(amount_msat, payee);
   }
 
