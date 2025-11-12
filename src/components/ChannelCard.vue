@@ -1,41 +1,51 @@
 <script setup>
 import { computed, defineProps } from "vue";
-import { encode } from "../utils/hex.js"; // Adjust path as needed
+import * as hex from "../utils/hex.js";
+import * as str from "../utils/str.js";
+import { abbreviate } from "../utils/str.js";
+import { Channel } from "../konduit/channel.js";
 
 // Define the prop, assuming the 'channel' object is passed in
 // and is an instance of your 'Channel' class.
 const props = defineProps({
   channel: {
-    type: Object, // Expecting an instance of your Channel class
+    type: Channel, // Expecting an instance of your Channel class
     required: true,
   },
 });
 
 // Computed property to safely display the tag
-const hexTag = computed(() => {
+const prettyTag = computed(() => {
   try {
     // channel.tag is a Uint8Array
-    return (
-      hex.encode(props.channel.tag || hex.decode("eeeeee")).substring(0, 16) +
-      "..."
-    );
+    const pretty = str.formatBytesAlphanumericOrHex(props.channel.tag);
+    console.log("PRETTY", pretty.length);
+    if (pretty.length < 20) {
+      return pretty;
+    } else {
+      return abbreviate(pretty, 7, 7);
+    }
   } catch (e) {
-    return "N/A";
+    console.log("ERRR", e);
+    return "[no tag]";
   }
 });
 
 // Use the methods from the L2 MixedReceipt object
 const availableAmount = computed(() => {
   try {
-    return props.channel.l2.amount();
+    return Math.round(props.channel.available() / 1_000_000).toFixed(2);
   } catch (e) {
+    console.log("amount, ", e);
     return "Error";
   }
 });
 
 const committedAmount = computed(() => {
   try {
-    return props.channel.l2.committed();
+    return Math.round(props.channel.unresolvedCommitment() / 1_000_000).toFixed(
+      2,
+    );
   } catch (e) {
     return "Error";
   }
@@ -44,18 +54,17 @@ const committedAmount = computed(() => {
 
 <template>
   <div class="channel-card">
-    <h3>Channel: {{ hexTag }}</h3>
     <p>
-      <strong>Adaptor:</strong>
-      {{ channel.adaptorInfo.url || "Unknown" }}
+      {{ prettyTag }}
     </p>
     <p>
-      <strong>Available:</strong>
-      {{ availableAmount }} Ada
+      {{ channel.adaptorInfo.url.slice(8) }}
     </p>
     <p>
-      <strong>Committed:</strong>
-      {{ committedAmount }} Ada
+      {{ availableAmount }}
+      <span v-if="Math.abs(committedAmount) > 0.00005">
+        {{ committedAmount }}</span
+      >
     </p>
   </div>
 </template>
@@ -64,10 +73,13 @@ const committedAmount = computed(() => {
 /* Keeping it simple as requested */
 .channel-card {
   border: 1px solid #ccc;
-  padding: 16px;
-  margin-bottom: 12px;
-  font-family: sans-serif;
-  max-width: 400px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  max-width: 15rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
 }
 .channel-card h3 {
   margin-top: 0;

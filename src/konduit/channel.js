@@ -178,10 +178,12 @@ export class Channel {
   }
 
   /**
-   * Funds available
+   * Funds unresolved
    * */
   unresolvedCommitment() {
-    throw Error("Not yet implemented");
+    return this.l2
+      .cheques()
+      .reduce((acc, curr) => acc + curr.cheque_body.amount, 0);
   }
 
   /**

@@ -1,7 +1,12 @@
 <script setup>
 import { Copy, ExternalLink, Share2 } from "lucide-vue-next";
 import QRCode from "qrcode";
-import { network, verificationKey, walletBalance, pollWalletBalance } from "../store.js";
+import {
+  network,
+  verificationKey,
+  walletBalance,
+  pollWalletBalance,
+} from "../store.js";
 import { networkTypes } from "../cardano/network.js";
 import * as hex from "../utils/hex.js";
 import {
@@ -10,7 +15,15 @@ import {
 } from "../cardano/address.js";
 import TheHeader from "../components/TheHeader.vue";
 import { useClipboard } from "@vueuse/core";
-import { computed, nextTick, ref, unref, watch, onMounted, onUnmounted } from "vue";
+import {
+  computed,
+  nextTick,
+  ref,
+  unref,
+  watch,
+  onMounted,
+  onUnmounted,
+} from "vue";
 import { abbreviate } from "../utils/str.js";
 
 const pollInterval = 15; // 15 seconds
@@ -130,11 +143,6 @@ watch(bech32Addr, generateQR, {
 
     <div id="address-section">
       <h2>Address</h2>
-      <div>
-        <h2>Verification key</h2>
-        <span>{{ hex.encode(verificationKey) }}</span>
-      </div>
-
       <div>
         <span class="address" :title="bech32Addr">{{ truncedAddr }}</span>
         <Copy
