@@ -1,12 +1,14 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 
 import * as uint8Array from "../utils/uint8Array.js";
+import * as cbor from "../cardano/cbor.js";
 
 import { Squash } from "./squash.js";
 import { MixedCheque } from "./mixedCheque.js";
 import { Unlocked } from "./unlocked.js";
 import { MAX_UNSQUASHED } from "./constants.js";
 import { Receipt } from "./receipt.js";
+import { SquashBody } from "./squashBody.js";
 
 export class MixedReceipt {
   /**
@@ -51,9 +53,62 @@ export class MixedReceipt {
 
     return new MixedReceipt(squash, sorted);
   }
+  /**
+   * Serialises the MixedReceipt instance into a plain object for storage.
+   * @returns {object} A plain object representation.
+   */
+  serialise() {
+    return {
+      squash: this.squash.serialise(),
+      mixedCheques: this.mixedCheques.map((mc) => mc.serialise()),
+    };
+  }
+
+  /**
+   * Deserialises a plain object from storage back into a MixedReceipt instance.
+   * Assumes 'Squash' class also has a static .deserialise() method.
+   * @param {object} data - The plain object.
+   * @param {any} data.squash
+   * @param {Array<any>} data.mixedCheques
+   * @returns {MixedReceipt} A new MixedReceipt instance.
+   * @throws {Error} If data is invalid.
+   */
+  static deserialise(data) {
+    if (!data || !data.squash || !Array.isArray(data.mixedCheques)) {
+      throw new Error(
+        "Invalid or incomplete data for MixedReceipt deserialisation.",
+      );
+    }
+
+    try {
+      // We must assume Squash.deserialise exists, as we don't have the file.
+      const squash = Squash.deserialise(data.squash);
+      const mixedCheques = data.mixedCheques.map((mcData) =>
+        MixedCheque.deserialise(mcData),
+      );
+
+      // Note: This bypasses the 'MixedReceipt.new()' verification logic
+      // to restore the exact saved state.
+      return new MixedReceipt(squash, mixedCheques);
+    } catch (error) {
+      throw new Error(`MixedReceipt deserialisation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Verify mixed receipt
+   * @param {Uint8Array<ArrayBufferLike>} key
+   * @param {Uint8Array<ArrayBufferLike>} tag
+   */
+  verify(key, tag) {
+    return (
+      this.squash.verify(key, tag) &&
+      this.mixedCheques.every((mc) => mc.verify(key, tag))
+    );
+  }
 
   /** @returns {number} */
-  max_index() {
+  maxIndex() {
     const squashIndex = this.squash.body.index;
     const lastCheque = this.mixedCheques[this.mixedCheques.length - 1];
     return Math.max(squashIndex, lastCheque ? lastCheque.index() : 0);
@@ -66,9 +121,11 @@ export class MixedReceipt {
 
   /** @returns {import('./cheque.js').Cheque[]} */
   cheques() {
-    return this.mixedCheques
-      .filter((mc) => mc.isCheque())
-      .map((mc) => mc.asCheque());
+    return (
+      this.mixedCheques
+        .filter((mc) => mc.isCheque())
+        .map((mc) => mc.asCheque()) || []
+    );
   }
 
   /** @returns {import('./unlocked.js').Unlocked[]} */
@@ -224,5 +281,44 @@ export class MixedReceipt {
       }
     }
     return squashBody;
+  }
+
+  /**
+   * @returns {Uint8Array} The CBOR-encoded MixedReceipt.
+   */
+  toCbor() {
+    const squash = this.squash.toCbor();
+    const cheques = cbor.encodeAsIndefiniteRaw(
+      this.mixedCheques.map((mc) => mc.toCbor()),
+    );
+    return cbor.encodeAsIndefiniteRaw([squash, cheques]);
+  }
+
+  /**
+   * Decodes a MixedReceipt from CBOR bytes.
+   * @param {Uint8Array} cborBytes - The CBOR-encoded MixedReceipt
+   * @returns {MixedReceipt} A new MixedReceipt instance.
+   * @throws {Error} If CBOR is invalid or doesn't represent a SquashBody.
+   */
+  static fromCbor(cborBytes) {
+    try {
+      const decoded = cbor.decode(cborBytes);
+      if (!Array.isArray(decoded) || decoded.length !== 2) {
+        throw new Error(
+          "Invalid CBOR structure for SquashBody. Expected [amount, index, exclude].",
+        );
+      }
+      const [[[s0, s1, s2], sig], mcs] = decoded;
+      const squash = new Squash(
+        new SquashBody(s0, s1, s2),
+        new Uint8Array(sig),
+      );
+      const mixedCheques = mcs.map((mc) =>
+        MixedCheque.fromCborDecoded(mc.tag, mc.value),
+      );
+      return new MixedReceipt(squash, mixedCheques);
+    } catch (error) {
+      throw new Error(`SquashBody fromCbor failed: ${error.message}`);
+    }
   }
 }

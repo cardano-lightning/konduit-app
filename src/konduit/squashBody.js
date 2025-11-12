@@ -3,7 +3,6 @@ import { concat } from "../utils/uint8Array.js";
 
 /**
  * Represents the body of a squash operation.
- * @typedef {object} SquashBody
  * @property {number} amount - The total amount being squashed.
  * @property {number} index - The index of the squash operation.
  * @property {number[]} exclude - An array of indices to exclude from the squash.
@@ -21,6 +20,49 @@ export class SquashBody {
     this.exclude = exclude;
   }
 
+  /**
+   * Serialises the SquashBody instance into a plain object for storage.
+   * @returns {object} A plain object representation.
+   */
+  serialise() {
+    return {
+      amount: this.amount,
+      index: this.index,
+      exclude: [...this.exclude],
+    };
+  }
+
+  /**
+   * Deserialises a plain object from storage back into a SquashBody instance.
+   * @param {object} data - The plain object.
+   * @param {number} data.index
+   * @param {number} data.amount
+   * @param {number[]} data.exclude
+   * @returns {SquashBody} A new SquashBody instance.
+   * @throws {Error} If data is invalid.
+   */
+  static deserialise(data) {
+    if (
+      !data ||
+      typeof data.amount !== "number" ||
+      typeof data.index !== "number" ||
+      !Array.isArray(data.exclude)
+    ) {
+      throw new Error(
+        "Invalid or incomplete data for SquashBody deserialisation.",
+      );
+    }
+    return new SquashBody(data.amount, data.index, data.exclude);
+  }
+
+  /**
+   * Make a squash body with everything 0.
+   * Used to initiate a channel
+   * @returns {SquashBody} A new SquashBody instance.
+   */
+  static zero() {
+    return new SquashBody(0, 0, []);
+  }
   /**
    * Verifies the integrity and rules of the squash body.
    * Rules:
@@ -51,10 +93,14 @@ export class SquashBody {
   /**
    * Returns the squash body's properties as an array.
    * Note: This returns an iterator for the 'exclude' property.
-   * @returns {[number, number, Iterator<number>]} An array containing amount, index, and an iterator for the excluded indices.
+   * @returns {[number, number | bigint, Iterator<number | bigint>]} An array containing amount, index, and an iterator for the excluded indices.
    */
   asArray() {
-    return [this.amount, this.index, this.exclude[Symbol.iterator]()];
+    return [
+      this.amount,
+      cbor.wrapInt(this.index),
+      this.exclude.map((x) => cbor.wrapInt(x))[Symbol.iterator](),
+    ];
   }
 
   /**
@@ -83,6 +129,33 @@ export class SquashBody {
    */
   toCbor() {
     return cbor.encodeAsIndefinite(this.asArray());
+  }
+  /**
+   * Decodes a SquashBody from CBOR bytes.
+   * @param {Uint8Array} cborBytes - The CBOR-encoded squash body.
+   * @returns {SquashBody} A new SquashBody instance.
+   * @throws {Error} If CBOR is invalid or doesn't represent a SquashBody.
+   */
+  static fromCbor(cborBytes) {
+    try {
+      const decoded = cbor.decode(cborBytes);
+      if (
+        !Array.isArray(decoded) ||
+        decoded.length !== 3 ||
+        !Array.isArray(decoded[2]) // exclude
+      ) {
+        throw new Error(
+          "Invalid CBOR structure for SquashBody. Expected [amount, index, exclude].",
+        );
+      }
+      return new SquashBody(
+        Number(decoded[0]),
+        Number(decoded[1]),
+        decoded[2].map((x) => Number(x)),
+      );
+    } catch (error) {
+      throw new Error(`SquashBody fromCbor failed: ${error.message}`);
+    }
   }
 
   /**

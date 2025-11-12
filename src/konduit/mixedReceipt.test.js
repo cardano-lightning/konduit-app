@@ -96,15 +96,15 @@ describe("MixedReceipt", () => {
   });
 
   describe("Helpers", () => {
-    it("max_index should return the highest index from cheques", () => {
-      expect(receipt.max_index()).toBe(18);
+    it("maxIndex should return the highest index from cheques", () => {
+      expect(receipt.maxIndex()).toBe(18);
     });
 
-    it("max_index should return the squash index if it is highest", () => {
+    it("maxIndex should return the squash index if it is highest", () => {
       const squashBody = new SquashBody(1000, 20, [15]);
       const squash = new Squash(squashBody, MOCK_SIG);
       const r = MixedReceipt.new(squash, [mixedCheque15()]);
-      expect(r.max_index()).toBe(20);
+      expect(r.maxIndex()).toBe(20);
     });
 
     it("capacity should return remaining slots", () => {

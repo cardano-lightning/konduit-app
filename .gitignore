@@ -1,4 +1,5 @@
 .envrc
+result
 # Logs
 logs
 *.log

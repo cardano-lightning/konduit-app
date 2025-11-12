@@ -1,4 +1,5 @@
 import * as hex from "../utils/hex.js";
+import * as time from "../utils/time.js";
 
 /**
  * @typedef {"Opened" | "Closed" | "Responded"} L1ChannelStage
@@ -22,8 +23,18 @@ export class L1Channel {
    * @param {number} subbed - Amount subbed. Should be 0 if 'Responded'.
    * @param {number} elapseAt - Timestamp when the channel can be elapsed. Zero if not 'Closed'.
    * @param {L1ChannelPhase} phase - The confirmation phase of the channel state.
+   * @param {number} updatedAt - Posix time **in seconds** when last updated
    */
-  constructor(txHash, outputIndex, stage, amount, subbed, elapseAt, phase) {
+  constructor(
+    txHash,
+    outputIndex,
+    stage,
+    amount,
+    subbed,
+    elapseAt,
+    phase,
+    updatedAt,
+  ) {
     /**
      * The transaction hash. Null if not yet on-chain.
      * @type {Uint8Array | null}
@@ -66,13 +77,42 @@ export class L1Channel {
      * @type {L1ChannelPhase}
      */
     this.phase = phase;
+
+    /**
+     * The confirmation phase of the channel state.
+     * @type {updatedAt}
+     */
+    this.updatedAt = updatedAt;
   }
 
   /**
-   * Serialises the L1Channel instance into a plain object with
-   * camelCase keys and a hex string for the txHash.
+   * Create l1channel from open tx
+   * @param {Uint8Array<ArrayBufferLike>} txHash
+   * @param {number} outputIndex
+   * @param {number} amount
+   * @returns {L1Channel} A new L1Channel instance.
+   */
+  static open(txHash, outputIndex, amount) {
+    const stage = "Opened";
+    const subbed = 0;
+    const elapseAt = 0;
+    const phase = "Pending";
+    const updatedAt = time.timestampSecs();
+    return new L1Channel(
+      txHash,
+      outputIndex,
+      stage,
+      amount,
+      subbed,
+      elapseAt,
+      phase,
+      updatedAt,
+    );
+  }
+  /**
+   * Serialises the L1Channel instance into a plain object
    *
-   * @returns {{txHash: string | null, outputIndex: number, stage: L1ChannelStage, amount: number, subbed: number, elapseAt: number, phase: L1ChannelPhase}}
+   * @returns {{txHash: string | null, outputIndex: number, stage: L1ChannelStage, amount: number, subbed: number, elapseAt: number, phase: L1ChannelPhase, updatedAt: number}}
    * A plain object suitable for JSON or IndexedDB.
    */
   serialise() {
@@ -84,25 +124,12 @@ export class L1Channel {
       subbed: this.subbed,
       elapseAt: this.elapseAt,
       phase: this.phase,
+      updatedAt: this.updatedAt,
     };
   }
 
   /**
-   * Create l1channel from open tx
-   * @param {Uint8Array<ArrayBufferLike>} txHash
-   * @param {number} outputIndex
-   * @param {number} amount
-   */
-  static open(txHash, outputIndex, amount) {
-    const stage = "Opened";
-    const subbed = 0;
-    const elapseAt = 0;
-    const phase = "Pending";
-    new L1Channel(txHash, outputIndex, stage, amount, subbed, elapseAt, phase);
-  }
-  /**
    * Deserialises a plain object (from JSON or DB) into an L1Channel instance.
-   * Expects camelCase keys and a hex string for txHash.
    *
    * @param {object} data - The plain object.
    * @param {string | null} data.txHash
@@ -112,6 +139,7 @@ export class L1Channel {
    * @param {number} data.subbed
    * @param {number} data.elapseAt
    * @param {L1ChannelPhase} data.phase
+   * @param {number} data.updatedAt
    * @returns {L1Channel} A new L1Channel instance.
    * @throws {Error} If data is invalid.
    */
@@ -125,7 +153,8 @@ export class L1Channel {
       data.amount == null ||
       data.subbed == null ||
       data.elapseAt == null ||
-      data.phase == null
+      data.phase == null ||
+      data.updatedAt == null
     ) {
       // Renamed from status
       throw new Error(
@@ -155,7 +184,8 @@ export class L1Channel {
         Number(data.amount),
         Number(data.subbed),
         Number(data.elapseAt),
-        data.phase, // Renamed from status
+        data.phase,
+        data.updatedAt,
       );
     } catch (error) {
       console.error("Failed to deserialise L1Channel:", error);

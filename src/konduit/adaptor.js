@@ -1,5 +1,24 @@
 import * as casing from "../utils/casing.js";
 import * as hex from "../utils/hex.js";
+import { AdaptorInfo } from "./adaptorInfo.js";
+import { Cheque } from "./cheque.js";
+
+/**
+ * @typedef {object} QuoteResponse
+ * @property {number} amount - The quote amount (channel currency eg lovelace)
+ * @property {number} relativeTimeout - The relative timeout required on the cheque
+ * @property {number} routingFee - The routing fee of bln in msat. This is purely informational
+ */
+
+/**
+ * @typedef {object} PayBody
+ * @property {Cheque} cheque - The cheque object. (Assumes 'Cheque' is a typedef you have defined elsewhere)
+ * @property {string} payee - The payee's public key (33 bytes) as a hex-encoded string.
+ * @property {number} amountMsat - The payment amount in millisatoshis.
+ * @property {string} paymentSecret - The payment secret (32 bytes) as a hex-encoded string.
+ * @property {number} finalCltvDelta - The final CLTV delta.
+ */
+
 /**
  * Adaptor client:
  * We assume one client per channel
@@ -7,7 +26,7 @@ import * as hex from "../utils/hex.js";
 export class Adaptor {
   /**
    * @param {Uint8Array<ArrayBufferLike>} keytag
-   * @param {string} baseUrl
+   * @param {string}  baseUrl
    */
   constructor(keytag, baseUrl) {
     // Ensure base URL doesn't have a trailing slash
@@ -108,9 +127,6 @@ export class Adaptor {
 
     try {
       const response = await fetch(url, fetchOptions);
-
-      // --- All response handling logic is identical to _request ---
-
       if (!response.ok) {
         let errorData;
         try {
@@ -151,11 +167,20 @@ export class Adaptor {
 
   /**
    * Fetches /info/
-   * @returns {Promise<object>}
+   * @returns {Promise<AdaptorInfo>}
    */
-  getInfo() {
+  async info() {
     console.log("Calling GET /info");
-    return this._request("/info", { method: "GET" });
+    const res = await this._request("/info", { method: "GET" });
+    return new AdaptorInfo(
+      hex.decode(res.adaptorKey),
+      res.closePeriod,
+      res.fee,
+      res.maxTagLength,
+      hex.decode(res.deployerVkey),
+      hex.decode(res.scriptHash),
+      this.baseUrl,
+    );
   }
 
   // --- Optional Endpoints ---
@@ -173,10 +198,10 @@ export class Adaptor {
 
   /**
    * Calls /ch/squash. (Assuming POST)
-   * @param {import("./squash.js")}.Squash squash - The squash
+   * @param {import("./squash.js").Squash} squash - The squash
    * @returns {Promise<object>}
    */
-  postChannelSquash(squash) {
+  chSquash(squash) {
     console.log("Calling POST /ch/squash");
     if (!this.keytag) {
       return Promise.reject(
@@ -190,10 +215,11 @@ export class Adaptor {
 
   /**
    * Calls /ch/quote. (Assuming POST)
-   * @param {object} quoteData - The data to send in the body.
-   * @returns {Promise<object>}
+   * @param {number} amountMsat
+   * @param {Uint8Array<ArrayBufferLike>} payee
+   * @returns {Promise<QuoteResponse>}
    */
-  postChannelQuote(quoteData = {}) {
+  chQuote(amountMsat, payee) {
     console.log("Calling POST /ch/quote");
     if (!this.keytag) {
       return Promise.reject(
@@ -202,7 +228,27 @@ export class Adaptor {
     }
     return this._request("/ch/quote", {
       method: "POST",
-      body: JSON.stringify(quoteData),
+      body: JSON.stringify({ Simple: { amount_msat: amountMsat, payee: payee }}),
+    });
+  }
+
+  /**
+   * Calls /ch/pay. (Assuming POST)
+   * @param {PayBody} payBody
+   * @returns {Promise<PayResponse>}
+   */
+  chPay(payBody) {
+    console.log("Calling POST /ch/pay");
+    if (!this.keytag) {
+      return Promise.reject(new Error("Keytag not set. Cannot call /ch/pay."));
+    }
+    const body = JSON.stringify({
+      ...payBody,
+      cheque: hex.encode(payBody.cheque.toCbor()),
+    });
+    return this._request("/ch/pay", {
+      method: "POST",
+      body,
     });
   }
 }

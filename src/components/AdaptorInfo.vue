@@ -1,10 +1,11 @@
 <script setup>
 import { computed } from "vue";
 import { abbreviate } from "../utils/str.js";
+import * as hex from "../utils/hex.js";
 
 const props = defineProps({
   adaptorKey: {
-    type: String,
+    type: Uint8Array,
     required: true,
   },
   closePeriod: {
@@ -21,7 +22,7 @@ const props = defineProps({
  * Truncates the adaptor hex key.
  */
 const formattedAdaptor = computed(() => {
-  const key = props.adaptorKey;
+  const key = hex.encode(props.adaptorKey);
   return abbreviate(key, 10, 10);
 });
 
@@ -63,7 +64,6 @@ const formattedClosePeriod = computed(() => {
 
 <template>
   <div class="adaptor-info-container">
-    <h3>Adaptor Info</h3>
     <div class="detail-grid">
       <div class="detail-label">Adaptor Key</div>
       <div class="detail-value mono">{{ formattedAdaptor }}</div>
@@ -81,12 +81,6 @@ const formattedClosePeriod = computed(() => {
 .adaptor-info-container {
   width: 100%;
   text-align: left;
-}
-
-h3 {
-  text-align: left;
-  margin-top: 0;
-  margin-bottom: 1rem;
 }
 
 /* Using a simple grid for layout, similar to InvoiceDetails.vue */

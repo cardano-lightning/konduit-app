@@ -17,8 +17,8 @@ describe("Cheque", () => {
     const tag = encoder.encode(tagStr);
 
     const lock = new Uint8Array([
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0,
+      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+      9, 9, 9, 9, 9, 9, 9,
     ]);
     const body = new ChequeBody(0, 100, 0, lock);
 
@@ -55,5 +55,68 @@ describe("Cheque", () => {
     const cborData = cheque.toCbor();
     expect(cborData).toBeInstanceOf(Uint8Array);
     expect(cborData.length).toBeGreaterThan(0);
+
+    // --- CBOR Roundtrip ---
+    const bodyCbor = body.toCbor();
+    const decodedBody = ChequeBody.fromCbor(bodyCbor);
+    expect(decodedBody).toBeInstanceOf(ChequeBody);
+    expect(decodedBody.index).toBe(body.index);
+    expect(decodedBody.amount).toBe(body.amount);
+    expect(decodedBody.timeout).toBe(body.timeout);
+    expect(decodedBody.lock).toStrictEqual(body.lock);
+
+    const chequeCbor = cheque.toCbor();
+    const decodedCheque = Cheque.fromCbor(chequeCbor);
+    expect(decodedCheque).toBeInstanceOf(Cheque);
+    expect(decodedCheque.body).toBeInstanceOf(ChequeBody);
+    expect(decodedCheque.body.index).toBe(body.index);
+    expect(decodedCheque.body.amount).toBe(body.amount);
+    expect(decodedCheque.body.timeout).toBe(body.timeout);
+    expect(decodedCheque.body.lock).toEqual(body.lock);
+    expect(decodedCheque.signature).toEqual(cheque.signature);
+  });
+  it("should correctly create, verify, and format a cheque", () => {
+    // --- Setup ---
+    const signingKey = new Uint8Array([
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0,
+    ]);
+    const tagStr = "konduitIsAwesome";
+    const encoder = new TextEncoder();
+    const tag = encoder.encode(tagStr);
+
+    const lock = new Uint8Array([
+      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+      9, 9, 9, 9, 9, 9, 9,
+    ]);
+    const body = new ChequeBody(0, 100, 1399999999999923, lock);
+    console.log(hex.encode(body.toCbor()));
+
+    // --- Create ---
+    const cheque = Cheque.make(signingKey, tag, body);
+
+    // --- CBOR ---
+    const cborData = cheque.toCbor();
+    expect(cborData).toBeInstanceOf(Uint8Array);
+    expect(cborData.length).toBeGreaterThan(0);
+
+    // --- CBOR Roundtrip ---
+    const bodyCbor = body.toCbor();
+    const decodedBody = ChequeBody.fromCbor(bodyCbor);
+    expect(decodedBody).toBeInstanceOf(ChequeBody);
+    expect(decodedBody.index).toBe(body.index);
+    expect(decodedBody.amount).toBe(body.amount);
+    expect(decodedBody.timeout).toBe(body.timeout);
+    expect(decodedBody.lock).toStrictEqual(body.lock);
+
+    const chequeCbor = cheque.toCbor();
+    const decodedCheque = Cheque.fromCbor(chequeCbor);
+    expect(decodedCheque).toBeInstanceOf(Cheque);
+    expect(decodedCheque.body).toBeInstanceOf(ChequeBody);
+    expect(decodedCheque.body.index).toBe(body.index);
+    expect(decodedCheque.body.amount).toBe(body.amount);
+    expect(decodedCheque.body.timeout).toBe(body.timeout);
+    expect(decodedCheque.body.lock).toEqual(body.lock);
+    expect(decodedCheque.signature).toEqual(cheque.signature);
   });
 });

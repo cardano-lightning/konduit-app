@@ -71,9 +71,11 @@ export const parsePayRequest = (rawText) => {
             ? Number(BigInt(decoded.millisatoshis) / 1000n)
             : 0),
         description: getTag("description"),
-        destination: decoded.payeeNodeKey,
+        payee: decoded.payeeNodeKey,
         expiry: expiryTimestamp,
         hash: getTag("payment_hash"),
+        paymentSecret: getTag("payment_secret"),
+        finalCltvDelta: getTag("min_final_cltv_expiry"),
       };
     } catch (e) {
       // It looked like an invoice but failed to parse.

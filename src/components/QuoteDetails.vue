@@ -1,55 +1,93 @@
 <script setup>
+import * as hex from "../utils/hex.js";
+import { Cheque } from "../konduit/cheque.js";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { abbreviate } from "../utils/str.js";
+import { signingKey } from "../store.js";
 
 const props = defineProps({
   invoice: {
     type: Object,
     required: true,
   },
+  quoteInfo: {
+    type: Object,
+    required: false,
+  },
 });
 
-const router = useRouter();
+const emit = defineEmits(["payApproved"]);
 
-const emit = defineEmits(["invoiceApproved"]);
+// quote item structure:
+//  {
+//    channelId: tagger(channel),
+//    channel: [channel],
+//    quote: [response from the server]
+//    error: null, // or error message
+//  };
 
-// Formats the amount (assuming it's in sats)
-const formattedAmount = computed(() => {
-  if (typeof props.invoice.amount !== "number") return "N/A";
-  return new Intl.NumberFormat().format(props.invoice.amount);
-});
+const TIMEOUT_GRACE_MILLISECONDS = 5 * 60 * 1000;
 
-// Formats the expiry date
-const formattedExpiry = computed(() => {
-  if (!props.invoice.expiry) return "N/A";
-  return new Date(props.invoice.expiry).toLocaleString();
-});
+const pay = async () => {
+  console.log("Paying quote:", props.quoteInfo);
+  let quote = props.quoteInfo.quote;
+  let channel = props.quoteInfo.channel;
+  console.log("Using quote:", quote);
+  let absoluteTimeout =
+    Date.now() + quote.relativeTimeout + TIMEOUT_GRACE_MILLISECONDS;
+  let chequeBody = channel.makeChequeBody(
+    quote.amount,
+    absoluteTimeout,
+    hex.decode(props.invoice.hash),
+  );
 
-// Truncates long strings for display
-const truncatedPayee = computed(() => {
-  const dest = props.invoice.payee;
-  if (!dest) return "N/A";
-  return abbreviate(dest, 10, 10);
-});
+  const cheque = Cheque.make(signingKey.value, channel.tag, chequeBody);
+  // TODO:
+  const res = await props.quoteInfo.channel.pay(cheque, props.invoice);
+  console.log("Payment result:", res);
 
-const truncatedHash = computed(() => {
-  const hash = props.invoice.hash;
-  if (!hash) return "N/A";
-  return abbreviate(hash, 10, 10);
-});
-
-const getQuotes = () => {
   // The value is not important here
-  emit("invoiceApproved", null);
+  // emit("payApproved", null);
 };
+
+// // Formats the amount (assuming it's in sats)
+// const formattedAmount = computed(() => {
+//   if (typeof props.invoice.amount !== "number") return "N/A";
+//   return new Intl.NumberFormat().format(props.invoice.amount);
+// });
+//
+// // Formats the expiry date
+// const formattedExpiry = computed(() => {
+//   if (!props.invoice.expiry) return "N/A";
+//   return new Date(props.invoice.expiry).toLocaleString();
+// });
+//
+// // Truncates long strings for display
+// const truncatedPayee = computed(() => {
+//   const dest = props.invoice.payee;
+//   if (!dest) return "N/A";
+//   return abbreviate(dest, 10, 10);
+// });
+//
+// const truncatedHash = computed(() => {
+//   const hash = props.invoice.hash;
+//   if (!hash) return "N/A";
+//   return abbreviate(hash, 10, 10);
+// });
+//
+// const getQuotes = () => {
+//   // The value is not important here
+//   emit("invoiceApproved", null);
+// };
 </script>
 
 <template>
   <div class="invoice-details-card">
-    <h3>Invoice Details</h3>
+    <h3>Quote Details</h3>
 
     <div v-if="props.invoice.amount >= 0" class="invoice-details">
+      <!--
       <div class="detail-grid">
         <div class="detail-label">Amount</div>
         <div class="detail-value amount">
@@ -76,8 +114,9 @@ const getQuotes = () => {
           {{ truncatedHash }}
         </div>
       </div>
+      -->
       <div class="buttons">
-        <button class="button primary" @click="getQuotes">Get Quotes</button>
+        <button class="button primary" @click="pay">Pay</button>
       </div>
     </div>
     <div v-else>Format not yet supported</div>
@@ -144,4 +183,3 @@ const getQuotes = () => {
   display: flex;
 }
 </style>
-

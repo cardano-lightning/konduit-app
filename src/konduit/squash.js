@@ -1,6 +1,7 @@
 import * as hex from "../utils/hex.js";
 import * as cbor from "../cardano/cbor.js";
 import { sign, verify } from "../cardano/keys.js";
+import { SquashBody } from "./squashBody.js";
 
 /**
  * Represents a signed "squash" operation.
@@ -20,6 +21,37 @@ export class Squash {
   }
 
   /**
+   * Serialises the Squash instance into a plain object for storage.
+   * @returns {object} A plain object representation.
+   */
+  serialise() {
+    return {
+      body: this.body.serialise(),
+      signature: hex.encode(this.signature),
+    };
+  }
+
+  /**
+   * Deserialises a plain object from storage back into a Squash instance.
+   * @param {object} data - The plain object.
+   * @param {any} data.body
+   * @param {string} data.signature
+   * @returns {Squash} A new Squash instance.
+   * @throws {Error} If data is invalid.
+   */
+  static deserialise(data) {
+    if (!data || !data.body || !data.signature) {
+      throw new Error("Invalid or incomplete data for Squash deserialisation.");
+    }
+    try {
+      const body = SquashBody.deserialise(data.body);
+      return new Squash(body, hex.decode(data.signature));
+    } catch (error) {
+      throw new Error(`Squash deserialisation failed: ${error.message}`);
+    }
+  }
+
+  /**
    * Creates a new Squash instance by signing the tagged body.
    * @param {Uint8Array} signingKey - The private key to sign with.
    * @param {Uint8Array} tag - A domain-separation tag.
@@ -28,6 +60,16 @@ export class Squash {
    */
   static make(signingKey, tag, body) {
     return new Squash(body, sign(signingKey, body.taggedBytes(tag)));
+  }
+
+  /**
+   * Creates a new Squash instance by signing the tagged body.
+   * @param {Uint8Array} signingKey - The private key to sign with.
+   * @param {Uint8Array} tag - A domain-separation tag.
+   * @returns {Squash} A new Squash instance.
+   */
+  static makeZero(signingKey, tag) {
+    return Squash.make(signingKey, tag, SquashBody.zero());
   }
 
   /**
@@ -62,5 +104,38 @@ export class Squash {
       this.body.toCbor(),
       cbor.encode(this.signature),
     ]);
+  }
+
+  /**
+   * Decodes a Squash from CBOR bytes.
+   * @param {Uint8Array} cborBytes - The CBOR-encoded squash.
+   * @returns {Squash} A new Squash instance.
+   * @throws {Error} If CBOR is invalid or doesn't represent a Squash.
+   */
+  static fromCbor(cborBytes) {
+    try {
+      const decoded = cbor.decode(cborBytes);
+
+      if (
+        !Array.isArray(decoded) ||
+        decoded.length !== 2 ||
+        !Array.isArray(decoded[0]) || // The decoded body should be an array
+        !decoded[1] // Check for signature (will catch null/undefined)
+      ) {
+        throw new Error(
+          "Invalid CBOR structure for Squash. Expected [body, signature].",
+        );
+      }
+
+      // Re-encode the decoded body array to get its CBOR bytes.
+      const bodyCborBytes = cbor.encodeAsIndefinite(decoded[0]);
+      const body = SquashBody.fromCbor(bodyCborBytes);
+      // Coerce signature to Uint8Array
+      const signature = new Uint8Array(decoded[1]);
+
+      return new Squash(body, signature);
+    } catch (error) {
+      throw new Error(`Squash fromCbor failed: ${error.message}`);
+    }
   }
 }

@@ -1,12 +1,7 @@
 import * as hex from "../utils/hex.js";
 import * as cbor from "../cardano/cbor.js";
 import { sign, verify } from "../cardano/keys.js";
-
-/**
- * @typedef {object} Cheque
- * @property {import('./chequeBody.js').ChequeBody} body
- * @property {Uint8Array} signature
- */
+import { ChequeBody } from "./chequeBody.js";
 
 export class Cheque {
   /**
@@ -16,6 +11,36 @@ export class Cheque {
   constructor(body, signature) {
     this.body = body;
     this.signature = signature;
+  }
+  /**
+   * Serialises the Cheque instance into a plain object for storage.
+   * @returns {object} A plain object representation.
+   */
+  serialise() {
+    return {
+      body: this.body.serialise(),
+      signature: hex.encode(this.signature),
+    };
+  }
+
+  /**
+   * Deserialises a plain object from storage back into a Cheque instance.
+   * @param {object} data - The plain object.
+   * @param {any} data.body
+   * @param {string} data.signature
+   * @returns {Cheque} A new Cheque instance.
+   * @throws {Error} If data is invalid.
+   */
+  static deserialise(data) {
+    if (!data || !data.body || !data.signature) {
+      throw new Error("Invalid or incomplete data for Cheque deserialisation.");
+    }
+    try {
+      const body = ChequeBody.deserialise(data.body);
+      return new Cheque(body, hex.decode(data.signature));
+    } catch (error) {
+      throw new Error(`Cheque deserialisation failed: ${error.message}`);
+    }
   }
 
   /**
@@ -58,5 +83,35 @@ export class Cheque {
       this.body.toCbor(),
       cbor.encode(this.signature),
     ]);
+  }
+  /**
+   * Decodes a Cheque from CBOR bytes.
+   * @param {Uint8Array} cborBytes - The CBOR-encoded cheque.
+   * @returns {Cheque} A new Cheque instance.
+   * @throws {Error} If CBOR is invalid or doesn't represent a Cheque.
+   */
+  static fromCbor(cborBytes) {
+    try {
+      // The CBOR decoder will parse the indefinite-length array
+      // and return a definite-length JS array: [decodedBody, decodedSignature]
+      const decoded = cbor.decode(cborBytes);
+      if (
+        !Array.isArray(decoded) ||
+        decoded.length !== 2 ||
+        !Array.isArray(decoded[0]) || // The decoded body should be an array
+        !(decoded[1] instanceof Uint8Array) // The signature
+      ) {
+        throw new Error(
+          "Invalid CBOR structure for Cheque. Expected [body, signature].",
+        );
+      }
+      const bodyCborBytes = cbor.encodeAsIndefinite(decoded[0]);
+      const body = ChequeBody.fromCbor(bodyCborBytes);
+      const signature = decoded[1];
+
+      return new Cheque(body, signature);
+    } catch (error) {
+      throw new Error(`Cheque fromCbor failed: ${error.message}`);
+    }
   }
 }

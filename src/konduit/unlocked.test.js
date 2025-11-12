@@ -10,20 +10,27 @@ describe("Unlocked", () => {
   it("should correctly create an unlocked cheque and format it", () => {
     // --- Setup ---
     const signingKey = new Uint8Array([
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0,
     ]);
     const tagStr = "konduitIsAwesome";
     const encoder = new TextEncoder();
     const tag = encoder.encode(tagStr);
     const secret = new Uint8Array([
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0,
     ]);
     const verificationKey = toVerificationKey(signingKey);
 
     // --- Create ---
-    const unlocked = Unlocked.make(signingKey, tag, 0, 100, 0, secret);
+    const unlocked = Unlocked.make(
+      signingKey,
+      tag,
+      11,
+      123898392,
+      172382797782,
+      secret,
+    );
 
     // --- Test Instance ---
     expect(unlocked).toBeInstanceOf(Unlocked);
@@ -34,8 +41,9 @@ describe("Unlocked", () => {
     // --- Test Body / Lock ---
     const expectedLock = sha256(secret);
     expect(unlocked.body.lock).toEqual(expectedLock);
-    expect(unlocked.body.index).toBe(0);
-    expect(unlocked.body.amount).toBe(100);
+    expect(unlocked.body.index).toBe(11);
+    expect(unlocked.body.amount).toBe(123898392);
+    expect(unlocked.body.timeout).toBe(172382797782);
 
     // --- Test Signature Verification (indirectly) ---
     // We can re-create the cheque to verify the signature stored in `unlocked` is correct.
@@ -48,5 +56,18 @@ describe("Unlocked", () => {
     expect(aikenString).toContain(unlocked.body.asAiken());
     expect(aikenString).toContain(hex.encode(unlocked.signature));
     expect(aikenString).toContain(hex.encode(secret));
+
+    // --- CBOR Roundtrip ---
+    const cborData = unlocked.toCbor();
+    const decoded = Unlocked.fromCbor(cborData);
+
+    expect(decoded).toBeInstanceOf(Unlocked);
+    expect(decoded.body).toBeInstanceOf(ChequeBody);
+    expect(decoded.body.index).toBe(unlocked.body.index);
+    expect(decoded.body.amount).toBe(unlocked.body.amount);
+    expect(decoded.body.timeout).toBe(unlocked.body.timeout);
+    expect(decoded.body.lock).toEqual(unlocked.body.lock);
+    expect(decoded.signature).toEqual(unlocked.signature);
+    expect(decoded.secret).toEqual(unlocked.secret);
   });
 });
