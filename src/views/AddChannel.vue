@@ -192,9 +192,6 @@ function resetForm() {
       <form v-if="stage === 2" @submit.prevent="submitForm">
         <h2>Channel details</h2>
 
-        <AdaptorInfo v-if="adaptorInfo" v-bind="adaptorInfo" />
-        <p v-else="">pending info...</p>
-
         <!-- Tag Input -->
         <div>
           <label for="tag">Tag:</label>
@@ -260,6 +257,9 @@ function resetForm() {
             Submit
           </button>
         </div>
+
+        <AdaptorInfo v-if="adaptorInfo" v-bind="adaptorInfo" />
+        <p v-else="">pending info...</p>
       </form>
     </div>
 

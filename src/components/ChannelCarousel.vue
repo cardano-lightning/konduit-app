@@ -43,7 +43,7 @@ onMounted(() => {
 }
 
 .channel-carousel-container {
-  max-width: 90%;
+  max-width: 95%;
   display: flex;
   flex-direction: column;
   gap: 1rem;

@@ -64,7 +64,6 @@ const formattedClosePeriod = computed(() => {
 
 <template>
   <div class="adaptor-info-container">
-    <h3>Adaptor Info</h3>
     <div class="detail-grid">
       <div class="detail-label">Adaptor Key</div>
       <div class="detail-value mono">{{ formattedAdaptor }}</div>
@@ -82,12 +81,6 @@ const formattedClosePeriod = computed(() => {
 .adaptor-info-container {
   width: 100%;
   text-align: left;
-}
-
-h3 {
-  text-align: left;
-  margin-top: 0;
-  margin-bottom: 1rem;
 }
 
 /* Using a simple grid for layout, similar to InvoiceDetails.vue */
