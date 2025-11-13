@@ -7,6 +7,10 @@ import { abbreviate } from "../utils/str.js";
 import { signingKey } from "../store.js";
 
 const props = defineProps({
+  rawInvoice: {
+    type: String,
+    required: true,
+  },
   invoice: {
     type: Object,
     required: true,
@@ -44,7 +48,7 @@ const pay = async () => {
 
   const cheque = Cheque.make(signingKey.value, channel.tag, chequeBody);
   // TODO:
-  const res = await props.quoteInfo.channel.pay(cheque, props.invoice);
+  const res = await props.quoteInfo.channel.pay(cheque, props.invoice.raw);
   console.log("Payment result:", res);
 
   // The value is not important here

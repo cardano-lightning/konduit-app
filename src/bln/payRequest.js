@@ -64,7 +64,7 @@ export const parsePayRequest = (rawText) => {
 
       return {
         type: "bolt11",
-        raw: rawInvoice,
+        raw: rawInvoice.toLowerCase(),
         amount:
           decoded.satoshis ||
           (decoded.millisatoshis

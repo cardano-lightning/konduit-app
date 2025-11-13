@@ -13,10 +13,11 @@ import { Cheque } from "./cheque.js";
 /**
  * @typedef {object} PayBody
  * @property {Cheque} cheque - The cheque object. (Assumes 'Cheque' is a typedef you have defined elsewhere)
- * @property {string} payee - The payee's public key (33 bytes) as a hex-encoded string.
- * @property {number} amountMsat - The payment amount in millisatoshis.
- * @property {string} paymentSecret - The payment secret (32 bytes) as a hex-encoded string.
- * @property {number} finalCltvDelta - The final CLTV delta.
+ * @property {string} invoice - Send the raw invoice
+ * // @property {string} payee - The payee's public key (33 bytes) as a hex-encoded string.
+ * // @property {number} amountMsat - The payment amount in millisatoshis.
+ * // @property {string} paymentSecret - The payment secret (32 bytes) as a hex-encoded string.
+ * // @property {number} finalCltvDelta - The final CLTV delta.
  */
 
 /**
@@ -226,25 +227,32 @@ export class Adaptor {
         new Error("Keytag not set. Cannot call /ch/quote."),
       );
     }
+    /// FIXME :: WE ADD AN EXTRA BIT JUST INCASE EXCHANGE RATE FLUXUATES OR SOMETHING
     return this._request("/ch/quote", {
       method: "POST",
-      body: JSON.stringify({ Simple: { amount_msat: amountMsat, payee: payee }}),
-    });
+      body: JSON.stringify({
+        Simple: { amount_msat: amountMsat, payee: payee },
+      }),
+    }).then((x) => ({ ...x, amount: x.amount + 5000 }));
   }
 
   /**
-   * Calls /ch/pay. (Assuming POST)
-   * @param {PayBody} payBody
+   * Calls /ch/pay. with invoice
+   * @param {Cheque} cheque
+   * @param {string} invoice
    * @returns {Promise<PayResponse>}
    */
-  chPay(payBody) {
+  chPayInvoice(cheque, invoice) {
     console.log("Calling POST /ch/pay");
+
     if (!this.keytag) {
       return Promise.reject(new Error("Keytag not set. Cannot call /ch/pay."));
     }
     const body = JSON.stringify({
-      ...payBody,
-      cheque: hex.encode(payBody.cheque.toCbor()),
+      Bolt11: {
+        invoice,
+        cheque: hex.encode(cheque.toCbor()),
+      },
     });
     return this._request("/ch/pay", {
       method: "POST",
