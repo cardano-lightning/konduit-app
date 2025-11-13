@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { abbreviate } from "../utils/str.js";
 import { channels } from "../store.js";
 import * as hex from "../utils/hex.js";
+import * as str from "../utils/str.js";
 
 const props = defineProps({
   invoice: {
@@ -24,52 +25,80 @@ const mkQuoteItem = (channel) => {
 };
 
 const setItemError = (channelId, error) => {
-  const index = quotes.findIndex(q => channelId === q.channelId);
+  const index = quotes.findIndex((q) => channelId === q.channelId);
   const newQuoteItem = { ...quotes[index], error: error };
   if (index === -1) return;
-  console.log("Updating quote item for channel", channelId, "with error", error);
+  console.log(
+    "Updating quote item for channel",
+    channelId,
+    "with error",
+    error,
+  );
   console.log("New quote item:", newQuoteItem);
   quotes.splice(index, 1, newQuoteItem);
 };
 
 const setItemQuote = (channelId, quote) => {
-  const index = quotes.findIndex(q => channelId === q.channelId);
+  const index = quotes.findIndex((q) => channelId === q.channelId);
   const newQuoteItem = { ...quotes[index], quote: quote };
   if (index === -1) return;
-  console.log("Updating quote item for channel", channelId, "with quote", quote);
+  console.log(
+    "Updating quote item for channel",
+    channelId,
+    "with quote",
+    quote,
+  );
   quotes.splice(index, 1, newQuoteItem);
 };
 
 const isQuoteLoading = (quoteItem) => {
-  console.log("isQuoteLoading check for channel", quoteItem.channelId, ":", quoteItem);
+  console.log(
+    "isQuoteLoading check for channel",
+    quoteItem.channelId,
+    ":",
+    quoteItem,
+  );
   return quoteItem.quote === null && quoteItem.error === null;
 };
 
 const loadQuote = async (quoteItem) => {
   try {
-    console.log("Requesting quote for channel", quoteItem.channelId, "for amount", props.invoice.amount, "to payee", props.invoice.payee);
-    let quote = await quoteItem.channel.quote(props.invoice.amount, props.invoice.payee);
+    console.log(
+      "Requesting quote for channel",
+      quoteItem.channelId,
+      "for amount",
+      props.invoice.amount,
+      "to payee",
+      props.invoice.payee,
+    );
+    let quote = await quoteItem.channel.quote(
+      props.invoice.amount,
+      props.invoice.payee,
+    );
     setItemQuote(quoteItem.channelId, quote);
   } catch (err) {
-    setItemError(quoteItem.channelId, err.message || 'Failed to get quote');
+    setItemError(quoteItem.channelId, err.message || "Failed to get quote");
   }
-}
+};
 
 // There is no need to watch the `invoice` prop here as it should be
 // immutable for the lifetime of this component instance.
 // The question is if we should even be watching `channels` here?
-watch(channels, (currChannels) => {
-  // Reset the quotes
-  quotes.splice(0, quotes.length);
+watch(
+  channels,
+  (currChannels) => {
+    // Reset the quotes
+    quotes.splice(0, quotes.length);
 
-  // Populate the quote table with empty entries
-  currChannels.forEach((ch) => {
-    let item = mkQuoteItem(ch);
-    quotes.push(mkQuoteItem(ch));
-    loadQuote(item);
-  });
-
-}, { immediate: true });
+    // Populate the quote table with empty entries
+    currChannels.forEach((ch) => {
+      let item = mkQuoteItem(ch);
+      quotes.push(mkQuoteItem(ch));
+      loadQuote(item);
+    });
+  },
+  { immediate: true },
+);
 
 const router = useRouter();
 
@@ -80,7 +109,7 @@ const formattedAmount = computed(() => {
 });
 
 function tagger(channel) {
-  return hex.encode(channel.tag) || "impossible";
+  return str.formatBytesAlphanumericOrHex(channel.tag) || "impossible";
 }
 
 // Formats the expiry date
@@ -92,7 +121,7 @@ const formattedExpiry = computed(() => {
 const emit = defineEmits(["quoteSelected"]);
 
 const quoteSelected = (channelId) => {
-  const quoteItem = quotes.find(q => q.channelId === channelId);
+  const quoteItem = quotes.find((q) => q.channelId === channelId);
   if (!quoteItem) {
     console.error("Quote item not found for channelId:", channelId);
     return;
@@ -100,67 +129,47 @@ const quoteSelected = (channelId) => {
   console.log("Quote selected:", quoteItem);
   emit("quoteSelected", quoteItem);
 };
-
 </script>
 
 <template>
   <div v-if="channels.length > 0">
-    <table>
-      <thead>
-        <tr>
-          <th>Channel</th>
-          <th>Quote</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="quoteItem in quotes" :key="quoteItem.channelId">
-          <td>{{ abbreviate(quoteItem.channelId, 8, 8) }}</td>
-          <td>
-            <span v-if="isQuoteLoading(quoteItem)">Loading...</span>
-            <span v-else-if="quoteItem.error">Error: {{ quoteItem.error }}</span>
-            <span v-else>{{ quoteItem.quote.amount }} sats</span>
-          </td>
-          <td>
-            <span v-if="isQuoteLoading(quoteItem)">⏳</span>
-            <span v-else-if="quoteItem.error">❌</span>
-            <span v-else>✅</span>
-          </td>
-          <td>
-              <button @click="quoteSelected(quoteItem.channelId)">Pay</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div
+      v-for="quoteItem in quotes"
+      class="quote-card"
+      :key="quoteItem.channelId"
+    >
+      <span>{{ quoteItem.channelId }}</span>
+      <div>
+        Status ::
+        <span v-if="isQuoteLoading(quoteItem)">⏳</span>
+        <span v-else-if="quoteItem.error">❌</span>
+        <span v-else>✅</span>
+      </div>
+      <div>
+        <span v-if="isQuoteLoading(quoteItem)">Loading...</span>
+        <span v-else-if="quoteItem.error">Error: {{ quoteItem.error }}</span>
+        <span v-else
+          >Fee :: {{ (quoteItem.quote.amount / 1_000_000).toFixed(2) }}
+        </span>
+      </div>
+      <div>
+        <button @click="quoteSelected(quoteItem.channelId)">{{ "=>" }}</button>
+      </div>
+    </div>
   </div>
-  <div v-else>
-    [ No channels available to get quotes from ]
-  </div>
+  <div v-else>[ No channels available to get quotes from ]</div>
 </template>
 
 <style scoped>
-table {
-  width: 100%;
-  border-collapse: collapse;
+.quote-card {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  width: 18rem;
+  max-width: 25rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
 }
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-th {
-  background-color: #f2f2f2;
-}
-
-tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-tr:hover {
-  background-color: #e9e9e9;
-}
-
 </style>

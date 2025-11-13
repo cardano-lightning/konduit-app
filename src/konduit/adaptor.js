@@ -233,7 +233,7 @@ export class Adaptor {
       body: JSON.stringify({
         Simple: { amount_msat: amountMsat, payee: payee },
       }),
-    }).then((x) => ({ ...x, amount: x.amount + 5000 }));
+    }).then((x) => ({ ...x, amount: x.amount }));
   }
 
   /**

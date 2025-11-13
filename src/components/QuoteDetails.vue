@@ -7,10 +7,6 @@ import { abbreviate } from "../utils/str.js";
 import { signingKey } from "../store.js";
 
 const props = defineProps({
-  rawInvoice: {
-    type: String,
-    required: true,
-  },
   invoice: {
     type: Object,
     required: true,
@@ -33,6 +29,8 @@ const emit = defineEmits(["payApproved"]);
 
 const TIMEOUT_GRACE_MILLISECONDS = 5 * 60 * 1000;
 
+const AMOUNT_GRACE_LOVELACE = 5000;
+
 const pay = async () => {
   console.log("Paying quote:", props.quoteInfo);
   let quote = props.quoteInfo.quote;
@@ -41,7 +39,7 @@ const pay = async () => {
   let absoluteTimeout =
     Date.now() + quote.relativeTimeout + TIMEOUT_GRACE_MILLISECONDS;
   let chequeBody = channel.makeChequeBody(
-    quote.amount,
+    quote.amount + AMOUNT_GRACE_LOVELACE,
     absoluteTimeout,
     hex.decode(props.invoice.hash),
   );
@@ -90,6 +88,7 @@ const pay = async () => {
   <div class="invoice-details-card">
     <h3>Quote Details</h3>
 
+    [ TODO :: DISPLAY FULL DETAILS ]
     <div v-if="props.invoice.amount >= 0" class="invoice-details">
       <!--
       <div class="detail-grid">
@@ -118,7 +117,7 @@ const pay = async () => {
           {{ truncatedHash }}
         </div>
       </div>
-      -->
+    -->
       <div class="buttons">
         <button class="button primary" @click="pay">Pay</button>
       </div>
