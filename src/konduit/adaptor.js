@@ -249,10 +249,8 @@ export class Adaptor {
       return Promise.reject(new Error("Keytag not set. Cannot call /ch/pay."));
     }
     const body = JSON.stringify({
-      Bolt11: {
-        invoice,
-        cheque: hex.encode(cheque.toCbor()),
-      },
+      invoice,
+      cheque: hex.encode(cheque.toCbor()),
     });
     return this._request("/ch/pay", {
       method: "POST",
