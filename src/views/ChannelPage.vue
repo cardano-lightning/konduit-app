@@ -1,3 +1,32 @@
+<script setup>
+import { computed } from "vue";
+import { encode } from "../utils/hex.js"; // Adjust path as needed
+import ChequeCard from "../components/ChequeCard.vue"; // Import the card
+
+const props = defineProps({
+  channel: {
+    type: Object, // Expecting an instance of your Channel class
+    required: true,
+  },
+});
+
+const hexTag = computed(() => {
+  try {
+    return encode(props.channel.tag);
+  } catch (e) {
+    return "N/A";
+  }
+});
+
+const l1TxHash = computed(() => {
+  try {
+    return encode(props.channel.l1.txHash) || "N/A (Pending)";
+  } catch (e) {
+    return "Error";
+  }
+});
+</script>
+
 <template>
   <div class="channel-page">
     <h2>Channel Details</h2>
@@ -43,35 +72,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import { computed, defineProps } from "vue";
-import { encode } from "../utils/hex.js"; // Adjust path as needed
-import ChequeCard from "../components/ChequeCard.vue"; // Import the card
-
-const props = defineProps({
-  channel: {
-    type: Object, // Expecting an instance of your Channel class
-    required: true,
-  },
-});
-
-const hexTag = computed(() => {
-  try {
-    return encode(props.channel.tag);
-  } catch (e) {
-    return "N/A";
-  }
-});
-
-const l1TxHash = computed(() => {
-  try {
-    return encode(props.channel.l1.txHash) || "N/A (Pending)";
-  } catch (e) {
-    return "Error";
-  }
-});
-</script>
 
 <style scoped>
 .channel-page {

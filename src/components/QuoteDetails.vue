@@ -29,7 +29,7 @@ const emit = defineEmits(["payApproved"]);
 
 const TIMEOUT_GRACE_MILLISECONDS = 5 * 60 * 1000;
 
-const AMOUNT_GRACE_LOVELACE = 5000;
+const AMOUNT_GRACE_LOVELACE = 2_000_000;
 
 const pay = async () => {
   console.log("Paying quote:", props.quoteInfo);
@@ -41,7 +41,7 @@ const pay = async () => {
   let chequeBody = channel.makeChequeBody(
     quote.amount + AMOUNT_GRACE_LOVELACE,
     absoluteTimeout,
-    hex.decode(props.invoice.hash),
+    props.invoice.paymentHash,
   );
 
   const cheque = Cheque.make(signingKey.value, channel.tag, chequeBody);

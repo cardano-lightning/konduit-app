@@ -1,7 +1,5 @@
 <script setup>
 import { computed, reactive, watch } from "vue";
-import { useRouter } from "vue-router";
-import { abbreviate } from "../utils/str.js";
 import { channels } from "../store.js";
 import * as hex from "../utils/hex.js";
 import * as str from "../utils/str.js";
@@ -69,7 +67,7 @@ const loadQuote = async (quoteItem) => {
       "for amount",
       props.invoice.amount,
       "to payee",
-      props.invoice.payee,
+      hex.encode(props.invoice.payee),
     );
     let quote = await quoteItem.channel.quote(
       props.invoice.amount,

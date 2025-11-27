@@ -2,33 +2,14 @@
 import { ref, watch } from "vue";
 import TheHeader from "../components/TheHeader.vue";
 import InvoiceInput from "../components/InvoiceInput.vue";
-import Quotes from "../components/Quotes.vue";
+import QuotesList from "../components/QuotesList.vue";
 import QuoteDetails from "../components/QuoteDetails.vue";
-import QrScan from "../components/QrScan.vue";
 import InvoiceDetails from "../components/InvoiceDetails.vue";
 import { parsePayRequest } from "../bln/payRequest.js";
 
-// const invoice = ref({
-//     "type": "bolt11",
-//     "raw": "lntb123450n1p5sh2fspp57pqutvc6q9d30kh6qyxvpx07qrqrrut8czk45wvut8trluqxnpqsdqdfahhqumfv5sjzcqzzsxqr3jssp5qpntdg40qcxeh3xy43us0zk3djqh5v2peldrtdp70gd7vpcy6wes9qxpqysgqa54uah5f9sw065t9unereh0vm0jjqwq6tulnd42pnxa6yl8e92xpkpgz5tpw0fx7v05lfkl93qumr80dk4xrnakkgh57xxk53e3kccqp5kwles",
-//     "amount": 12345,
-//     "description": "Oopsie!!",
-//     "payee": "022a15e511bc5e5eb10e3d3d777fa098e9087fcd878917986ee3a157340becdbfa",
-//     "expiry": 1762389888000,
-//     "hash": "f041c5b31a015b17dafa010cc099fe00c031f167c0ad5a399c59d63ff0069841",
-//     "paymentSecret": "0066b6a2af060d9bc4c4ac79078ad16c817a3141cfda35b43e7a1be60704d3b3",
-//     "finalCltvDelta": 80
-// });
 const invoice = ref(null);
 
 const invoiceApproved = ref(false); // Whether the user approved the invoice
-// quote item structure:
-//  {
-//    channelId: tagger(channel),
-//    channel: [channel],
-//    quote: [response from the server]
-//    error: null, // or error message
-//  };
 const quoteInfo = ref(null);
 const pendingPay = ref(null); // Holds pay info
 const error = ref(null);
@@ -83,7 +64,7 @@ const goBack = () => {
       :quoteInfo="quoteInfo"
       :invoice="invoice"
     />
-    <Quotes
+    <QuotesList
       v-else-if="invoiceApproved"
       :invoice="invoice"
       @quoteSelected="

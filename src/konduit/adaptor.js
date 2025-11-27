@@ -231,7 +231,7 @@ export class Adaptor {
     return this._request("/ch/quote", {
       method: "POST",
       body: JSON.stringify({
-        Simple: { amount_msat: amountMsat, payee: payee },
+        Simple: { amount_msat: amountMsat, payee: hex.encode(payee) },
       }),
     }).then((x) => ({ ...x, amount: x.amount }));
   }

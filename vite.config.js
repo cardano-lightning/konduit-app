@@ -1,7 +1,6 @@
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -14,7 +13,6 @@ export default defineConfig({
   },
   // If you have rollupOptions.output.format = 'iife' for the main bundle, keep it—workers are handled separately
   plugins: [
-    nodePolyfills(),
     vue(),
     VitePWA({
       registerType: "prompt",
