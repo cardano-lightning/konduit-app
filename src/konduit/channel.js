@@ -98,7 +98,7 @@ export class Channel {
    * @param {Uint8Array<ArrayBufferLike>} lock
    */
   makeChequeBody(amount, timeout, lock) {
-    const index = this.l2.maxIndex() + 2;
+    const index = this.l2.maxIndex() + 3;
     return new ChequeBody(index, amount, timeout, lock);
   }
 
@@ -138,30 +138,24 @@ export class Channel {
    * Gets inserted into mixed receipt
    * squash verification
    * returns {Promise<QuoteResult | null>}
-   * @param {number} amount_msat - Amount to pay in msats
+   * @param {number | BigInt} amount_msat - Amount to pay in msats
    * @param {Uint8Array} payee - 33 Byte address
    * @returns {QuoteResponse}
    */
   async quote(amount_msat, payee) {
-    return this.adaptor().chQuote(amount_msat, payee);
+    return this.adaptor().chQuote(Number(amount_msat), payee);
   }
 
   /**
    * newCheque
    * Gets inserted into mixed receipt
-   * squash verification
+   * FIXME DOES NOT WORK
    * @param {Cheque} cheque
-   * @param {{ payee: any; amount: any; paymentSecret: any; finalCltvDelta: any; }} invoiceDetails
+   * @param {string} invoice
    */
-  pay(cheque, invoiceDetails) {
+  pay(cheque, invoice) {
     this.insertCheque(cheque);
-    return this.adaptor().chPay({
-      cheque,
-      payee: invoiceDetails.payee,
-      amount_msat: invoiceDetails.amount,
-      payment_secret: invoiceDetails.paymentSecret,
-      final_cltv_delta: invoiceDetails.finalCltvDelta,
-    });
+    return this.adaptor().chPayInvoice(cheque, invoice);
   }
 
   /**

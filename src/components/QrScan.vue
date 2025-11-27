@@ -1,28 +1,58 @@
-<script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+<script setup lang="ts">
+import {
+  ref,
+  onMounted,
+  onUnmounted,
+  reactive,
+  shallowRef,
+  useTemplateRef,
+  watchEffect,
+} from "vue";
+import { useDevicesList, useUserMedia } from "@vueuse/core";
 import Worker from "../utils/qrScanWorker.js?worker";
+
+const props = defineProps({
+  scanRate: {
+    type: Number,
+    default: 500,
+  },
+});
 
 const emit = defineEmits(["payload"]);
 
-const props = { scanRate: 500 };
-
+const videoRef = useTemplateRef("videoRef");
 const barcode = ref(null);
 const qrWorker = ref(null);
 const containerSize = ref({ width: 0, height: 0 });
-
-const videoRef = ref(null);
-const isFrontCamera = ref(false);
 const containerRef = ref(null);
 const snapshotCanvasRef = ref(null);
-
 const animationFrameId = ref(null);
 const resizeObserver = ref(null);
 let lastScanTime = 0;
 
+/// FIXME :: ID SELECTION IS NOT YET EXPOSED TO THE USER.
+const currentCamera = shallowRef<string>();
+const { videoInputs: cameras } = useDevicesList({
+  requestPermissions: true,
+  onUpdated() {
+    if (!cameras.value.find((i) => i.deviceId === currentCamera.value))
+      currentCamera.value = cameras.value[0]?.deviceId;
+  },
+});
+
+const { stream } = useUserMedia({
+  constraints: reactive({ video: { deviceId: { exact: currentCamera } } }),
+  enabled: true,
+});
+
+watchEffect(() => {
+  if (videoRef.value) videoRef.value.srcObject = stream.value!;
+});
+
 const animationLoop = (currentTime) => {
   if (!videoRef.value || !snapshotCanvasRef.value) return;
 
-  const video = videoRef.value;
+  const inner = videoRef.value;
   const canvas = snapshotCanvasRef.value;
   const context = canvas.getContext("2d", { willReadFrequently: true });
 
@@ -32,13 +62,13 @@ const animationLoop = (currentTime) => {
   if (
     context &&
     timeSinceLastScan > props.scanRate &&
-    video.readyState === video.HAVE_ENOUGH_DATA
+    inner.readyState === inner.HAVE_ENOUGH_DATA
   ) {
     lastScanTime = currentTime;
 
-    // Crop a square from the center of the video feed
-    const videoWidth = video.videoWidth;
-    const videoHeight = video.videoHeight;
+    // Crop a square from the center of the inner feed
+    const videoWidth = inner.videoWidth;
+    const videoHeight = inner.videoHeight;
     const size = Math.min(videoWidth, videoHeight);
     const sx = (videoWidth - size) / 2;
     const sy = (videoHeight - size) / 2;
@@ -47,7 +77,7 @@ const animationLoop = (currentTime) => {
     canvas.width = size;
     canvas.height = size;
 
-    context.drawImage(video, sx, sy, size, size, 0, 0, size, size);
+    context.drawImage(inner, sx, sy, size, size, 0, 0, size, size);
     const imageData = context.getImageData(0, 0, size, size);
 
     // Send the image data to the worker
@@ -62,27 +92,6 @@ const animationLoop = (currentTime) => {
   animationFrameId.value = requestAnimationFrame(animationLoop);
   // }
 };
-const initializeCamera = async () => {
-  if (videoRef.value) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: { facingMode: "environment" },
-      });
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        const settings = videoTrack.getSettings();
-        isFrontCamera.value = settings.facingMode === "user";
-        console.log("Camera facing mode:", settings.facingMode);
-      }
-      videoRef.value.srcObject = stream;
-    } catch (error) {
-      console.error("Camera access was denied or an error occurred:", error);
-    }
-  }
-};
-
-// --- LIFECYCLE HOOKS ---
 
 onMounted(() => {
   const worker = new Worker();
@@ -90,11 +99,8 @@ onMounted(() => {
   worker.onmessage = (event) => {
     if (event.data && event.data.length > 0) {
       emit("payload", event.data[0].rawValue);
-      stopScanner();
     }
   };
-
-  initializeCamera();
 
   // Set up a resize observer to keep the video element square
   if (containerRef.value) {
@@ -114,23 +120,7 @@ onMounted(() => {
   animationFrameId.value = requestAnimationFrame(animationLoop);
 });
 
-const stopScanner = () => {
-  // Stop the video stream
-  if (videoRef.value?.srcObject) {
-    const stream = videoRef.value.srcObject;
-    stream.getTracks().forEach((track) => track.stop());
-    videoRef.value.srcObject = null;
-  }
-
-  // Stop the animation loop
-  if (animationFrameId.value) {
-    cancelAnimationFrame(animationFrameId.value);
-    animationFrameId.value = null;
-  }
-};
-
 onUnmounted(() => {
-  stopScanner();
   // Terminate the worker
   if (qrWorker.value) {
     qrWorker.value.terminate();
@@ -227,6 +217,7 @@ onUnmounted(() => {
   display: none;
 }
 
+/* FIXME :: NOT YET WORKED OUT WHEN TO MIRROR THE DISPLAY */
 .mirror {
   -webkit-transform: scaleX(-1);
   transform: scaleX(-1);

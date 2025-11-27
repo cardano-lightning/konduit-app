@@ -1,4 +1,4 @@
-import { bech32 } from "bech32";
+import { bech32 } from "@scure/base";
 import { networkTypes } from "./network.js";
 import { blake2b224 } from "./hash.js";
 
@@ -6,7 +6,7 @@ import { blake2b224 } from "./hash.js";
  * Generates the raw byte representation of a base address (type 6)
  * from a verification key.
  *
- * @param {import('./network.js').{networkTypes} network - The network type (MAINNET, PREPROD, etc.).
+ * @param {import('./network.js').networkTypes} network - The network type (MAINNET, PREPROD, etc.).
  * @param {Uint8Array} verificationKey - The public verification key.
  * @returns {Uint8Array} The raw byte representation of the base address.
  * @throws {Error} If the generated key hash is invalid.
@@ -30,7 +30,7 @@ export function verificationKeyToAddressBytes(network, verificationKey) {
  * (Blake2b-224) of the verification key. It does not include a
  * delegation part.
  *
- * @param {import('./network.js').{networkTypes} network - The network type (MAINNET, PREPROD, etc.).
+ * @param {import('./network.js').networkTypes} network - The network type (MAINNET, PREPROD, etc.).
  * @param {Uint8Array} verificationKey - The public verification key.
  * @returns {string} The bech32 encoded base address (e.g., "addr1...").
  * @throws {Error} If keys.hashVerificationKey is not a function or fails.

@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import QrScan from "../components/QrScan.vue";
+import QrScan from "./QrScan.vue";
 import { parsePayRequest } from "../bln/payRequest.js";
 
 const emit = defineEmits(["invoice"]);
@@ -48,7 +48,13 @@ const handleParse = (rawInvoice) => {
       {{ error }}
     </div>
     <div class="buttons">
-      <button v-if="invoiceRaw == null" @click="invoiceRaw = 'lntb123450n1p5sh2fspp57pqutvc6q9d30kh6qyxvpx07qrqrrut8czk45wvut8trluqxnpqsdqdfahhqumfv5sjzcqzzsxqr3jssp5qpntdg40qcxeh3xy43us0zk3djqh5v2peldrtdp70gd7vpcy6wes9qxpqysgqa54uah5f9sw065t9unereh0vm0jjqwq6tulnd42pnxa6yl8e92xpkpgz5tpw0fx7v05lfkl93qumr80dk4xrnakkgh57xxk53e3kccqp5kwles'">
+      <button
+        v-if="invoiceRaw == null"
+        @click="
+          invoiceRaw =
+            'lntb560n1p5j2uzzpp56rlygaaaxa2m8e79zt4awz9zj5uvn3vh8nk4cua5q8qg4uwgn40qdqqcqzzsxqrrsssp5l26u64e68tkshfzk5hu4z2mehpkf2erwdq3f2pd9f3tfyftzrkls9qxpqysgqner23r9x47vvdktgtazhvt2mp4u6yet0t3h0jwglr9d72esrcyy40xr5s3044qkvd79jppaqvh9q8cg8tkxp46zzs6ncdlkz97l8h0qqlf0402'
+        "
+      >
         Enter Manually
       </button>
       <button v-else @click="handleManualNext">Next</button>
