@@ -30,7 +30,8 @@ stdenv.mkDerivation (finalAttrs: {
     yarnLock = finalAttrs.src + "/yarn.lock";
     # Please uncomment the line fake hash line below and run `nix build .#app`
     # to get the new hash. Please also leave this comment and that line in place :-P
-    hash = "sha256-ejG38iKBDWIJksj9akG9g8R68NrSJYUCR8MsPa4WVOI=";
+    # hash = "sha256-ejG38iKBDWIJksj9akG9g8R68NrSJYUCR8MsPa4WVOI=";
+    hash = "sha256-6bOIi89C91WkMNV6hVZROCzHHJkTkRsOBkQXZ2XNvrY=";
     # hash = lib.fakeHash;
   };
 
